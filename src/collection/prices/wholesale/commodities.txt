@@ -18,7 +18,7 @@ Same/Savi
 Soji
 T.V. Cumbu
 Wheat
-#Drug and Narcotics
+#Drugs and Narcotics
 Arecanut(Betelnut/Supari)
 Betal Leaves
 Isabgul (Psyllium)
@@ -122,7 +122,7 @@ Siddota
 Sweet Lime
 Tender Coconut
 Water Melon
-#Live Stock,Poultry,Fisheries
+#Live Stock, Poultry, Fisheries
 Bull
 Calf
 Cock

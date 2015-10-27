@@ -33,7 +33,7 @@ Examples:
 data_dir = '../../../../data/agmarknet'
 
 commodity = ''
-family = ''
+category = ''
 
 
 def download_data(date_string):
@@ -68,7 +68,7 @@ def html_to_csv(date_string, commodity, html):
             state = row.findAll("td")[0].getText()
             continue
 
-        for td in row.findAll("td"):   
+        for td in row.findAll("td"):
             text = td.getText()
             cur_row.append(text)
         if len(cur_row) < 7: continue
@@ -85,15 +85,16 @@ def html_to_csv(date_string, commodity, html):
     #                + re.sub('/', '_', date_string) + '.csv'
     #raw_file_name = raw_out_dir + '/' + commodity  + '_' \
     #                + re.sub('/', '_', date_string) + '.html'
-    outdir = path.join(data_dir, 'by_date_and_commodity', family)
+    outdir = path.join(data_dir, 'by_date_and_commodity', category)
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     outfile = '_'.join([commodity, re.sub('/', '-', date_string) + '.csv'])
     outpath = path.join(outdir, outfile)
+    print(outpath)
 
     #print "### Output file:", out_file_name
     #outfile = open(outfile_name, "w")
-    df = pd.DataFrame(all_rows) 
+    df = pd.DataFrame(all_rows)
     df = df.apply(lambda x: x.str.strip(), axis=1)
     print(df)
     ## add new columns
@@ -129,7 +130,7 @@ def html_to_csv(date_string, commodity, html):
         del r[3]
         r = map(lambda x: "*" if x == "NR" else x, r)
         tonnes = r[2] #float('0' + re.sub(r'[^\d\.]', '', r[2]))
-        # price per kg 
+        # price per kg
         r = map(lambda x: float(x)/100 if x.isdigit() else x, r)
 
         r[:0] = [date_string]
@@ -158,7 +159,7 @@ def download_range(drange):
     srange, erange = drange
     sdate = validate_date(srange)
     edate = validate_date(erange)
-    
+
     if sdate > edate:
         sys.exit("ERROR: start date > end date")
 
@@ -197,15 +198,18 @@ if __name__ == "__main__":
     parser.add_option("-d", "--date",
                       action="store", nargs=1, dest="date")
 
-    parser.add_option("-f", "--family", action="store", nargs=1, dest="family")
+    parser.add_option("-f", "--category", action="store", nargs=1, dest="category")
 
     parser.add_option("-c", "--commodity",
                       action="store", nargs=1, dest="commodity")
-    
     (options, args) = parser.parse_args()
 
-    if options.family:
-        family = options.family
+    if options.category:
+        category = options.category
+        print(category)
+        category = re.sub('\s+', ' ', category.replace(',', ' '))
+        category = '_'.join(category.split(' '))
+        print(category)
 
     if not options.commodity:
         usage()
