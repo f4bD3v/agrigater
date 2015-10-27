@@ -39,7 +39,9 @@ family = ''
 def download_data(date_string):
     """Download weekly prices in HTML and save them to file CSV"""
     url = "http://agmarknet.nic.in/cmm2_home.asp?comm=%s&dt=%s" % (commodity, date_string)
+    print(url)
     r = requests.get(url)
+    print(r.text)
     #response = urllib2.urlopen(req)
     #result_html = response.read()
     html_to_csv(date_string, commodity, r.text)
