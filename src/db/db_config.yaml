@@ -1,0 +1,7 @@
+---
+db: agrigater
+meteordb: meteor
+address: localhost
+port: 27017 
+meteorport: 3001
+dbpath: ~/mongodb/data/db

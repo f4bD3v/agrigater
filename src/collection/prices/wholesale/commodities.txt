@@ -1,0 +1,372 @@
+#Beverages
+Cocoa
+Coffee
+Tea
+#Cereals
+Bajra(Pearl Millet)
+Barley (Jau)
+Beaten Rice
+Hybrid Cumbu
+Jowar(Sorgham)
+Maize
+Navane
+Paddy(Dhan)
+Ragi (Finger Millet)
+Rice
+Sajje
+Same/Savi
+Soji
+T.V. Cumbu
+Wheat
+#Drug and Narcotics
+Arecanut(Betelnut/Supari)
+Betal Leaves
+Isabgul (Psyllium)
+Mahua
+Mahua Seed
+Myrobolan
+Other Drugs & Narcotics
+Tobacco
+#Dry Fruits
+Almond(Badam)
+Cashewnuts
+Dry Grapes
+Walnut
+#Fibre Crops
+Cotton
+Jute
+Lint
+Sunhemp
+#Flowers
+All Flower
+Anthorium
+Astera
+BOP
+Chrysanthemum
+Chrysanthemum(Loose)
+Cornation
+Daila(Chandni)
+Delha
+Gladiolus Bulb
+Gladiolus Cut Flower
+Jaffri
+Jarbara
+Jasmine
+Kakada
+Kankambra
+Lilly
+Lotus
+Marget
+Marygold(Calcutta)
+Marygold(loose)
+Orchid
+Patti Calcutta
+Raibel
+Rose(Local)
+Rose(Loose)
+Rose(Tata)
+Tube Flower
+Tube Rose(Double)
+Tube Rose(Loose)
+Tube Rose(Single)
+#Forest Products
+Antawala
+Bamboo
+Bay leaf (Tejpatta)
+Broomstick
+Cane
+Firewood
+Flower Broom
+Jute Seed
+Other Forest Product
+Resinwood
+Soapnut
+Tamarind Fruit
+Tamarind Seed
+Torchwood
+Wood
+#Fruits
+Apple
+Apricot(Jardalu/Khumani)
+Banana
+Ber (Zizyphus)
+Borehannu
+Chakotha
+Cherry
+Chikoos(Sapota)
+Custard Apple (Sharifa)
+Grapes
+Guava
+Jack Fruit
+Jamun
+Karbuja
+Kinnow
+Lime
+Litchi
+Lukad
+Mango
+Marasebu
+Mousambi
+Musk Melon
+Orange
+Other Fruits
+Papaya
+Peach
+Pears
+Persimon(Japani Fal)
+Pine Apple
+Plum
+Pomegranate
+Seetapal
+Siddota
+Sweet Lime
+Tender Coconut
+Water Melon
+#Live Stock,Poultry,Fisheries
+Bull
+Calf
+Cock
+Cow
+Duck
+Egg
+Fish
+Goat
+He Buffalo
+Hen
+Ox
+Pigs
+Ram
+She Buffalo
+She Goat
+Sheep
+#Oil Seeds
+Ambada Seed
+Castor Oil
+Castor Seed
+Coconut Oil
+Coconut Seed
+Copra
+Cotton Seed
+Gingelly (Sesamum, Sesame, Til)
+Gingelly Oil
+Ground Nut Oil
+Ground Nut Seed
+Groundnut
+Groundnut (Split)
+Gurellu
+Hippe Seed
+Honge seed
+Linseed
+Mustard
+Mustard Oil
+Neem Seed
+Niger Seed (Ramtil)
+Other Oil Seed
+Pundi Seed
+Safflower
+Sesamum(Sesame,Gingelly,Til)
+Soyabean
+Sunflower
+Sunflower Seed
+Suva (Dill Seed)
+Toria
+#Other
+Anjura
+Bran
+Broken Rice
+Bunch Beans
+Butter
+Camel Hair
+Cashew Kernnel
+Chennangi (W)
+Citrus Fruit
+Coconut
+Dalda
+Dhaincha
+Dry Fodder
+Fried Gram
+Ghee
+Goat Hair
+Gramflour
+Green Fodder
+Gur(Jaggery)
+Haralekai
+Honey
+Jaggery
+Jau
+Javi
+Kharif Mash
+Khoya
+Kuchur
+Mahedi
+Maida Atta
+Maragensu
+Mash
+Millets
+Nargasi
+Nearle Hannu
+Nelli Kai
+Polherb
+Pundi
+Rajgir
+Raya
+Riccbcan
+Rubber
+Sabu Dan
+Saffron
+Sarasum
+Seegu
+Skin And Hide
+Sompu
+Sugar
+Sugarcane
+Suram
+Taramira
+Wheat Atta
+Wool
+Yam
+#Pulses
+Alasande Gram
+Arhar (Tur)
+Avare Dal
+Beans
+Bengal Grams(Gram)
+Big Gram
+Black Grams (Urd Beans)
+Bullar
+Chennangidal
+Cowpea (Lobia)(Asparagus)
+Dal (Avare)
+Gram (Bengal Grams)
+Green Gram Dal
+Green Grams (Moong)
+Green Peas
+Horses Gram
+Kabuli Chana(Chickpeas-White)
+Karamani
+Lak
+Lentil(Masur)
+Masur Dal
+Mataki
+Moath Dal
+Moath Dal
+Other Pulses
+Peas(Dry)
+Red Grams
+Thinai (Italian Millet)
+Tur Dal
+Urd Dal
+Varagu
+White Peas
+#Spices
+Ajwan
+Betelnuts
+Black pepper
+Cardamoms
+Chili Red
+Cinamon(Dalchini)
+Cloves
+Coca
+Coconut
+Corriander seed
+Cummin Seed(Jeera)
+Dry Chillies
+Garlic
+Ginger
+Kacholam
+Mace
+Methi Seeds
+Nutmeg
+Other Spices
+Pepper garbled
+Pepper ungarbled
+Soanf
+Turmeric
+#Vegetables
+Alsandikai
+Amaranthus
+Amla
+Amphophalus
+Ashgourd
+Balekai
+Banana - Green
+Beetroot
+Bhindi(Ladies Finger)
+Binoula
+Bitter gourd
+Bottle gourd
+Brinjal
+Cabbage
+Capsicum
+Carrot
+Cauliflower
+Chapparad Avare
+Chilly Capsicum
+Chow Chow
+Cluster beans
+Colacasia
+Coriander
+Cowpea(Veg)
+Cucumbar
+Cucumber (Long Melon)
+Drumstick
+Duster Beans
+Egypian Clover(Barseem)
+Elephant Yam (Suran)
+Field Pea
+French Beans (Frasbean)
+Galgal(Lemon)
+Gram Raw(Chholia)
+Green Avare (W)
+Green Chilly
+Green ginger
+Groundnut pods (raw)
+Guar
+Indian Beans (Seam)
+Indian Colza(Sarson)
+Jamamkhan
+Kartali (Kantola)
+Knool Khol
+Ladies Finger
+Leafy Vegetable
+Lemon
+Little gourd (Kundru)
+Lotus Sticks
+Mango (Raw-Ripe)
+Mashrooms
+Methi
+Mint(Pudina)
+Onion
+Onion Green
+Other Tubers
+Other Vegetable
+Papaya (Raw)
+Peas cod
+Peas Wet
+Pegeon Pea (Arhar Fali)
+Pointed gourd (Parval)
+Potato
+Pumpkin
+Raddish
+Rat Tail Radish (Mogari)
+Ridgeguard(Tori)
+Round gourd
+Season Leaves
+Seemebadnekai
+Snakeguard
+Spinach
+Sponge gourd
+Squash(Chappal Kadoo)
+Surat Beans (Papadi)
+Suvarna Gadde
+Sweet Potato
+Sweet Pumpkin
+Tapioca
+Thogrikai
+Thondekai
+Tinda
+Tomato
+Turmeric (raw)
+Turnip
+White Pumpkin
+Yam (Ratalu)

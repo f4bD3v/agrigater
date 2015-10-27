@@ -1,0 +1,10 @@
+€}q(Ucleaner]q(Ufind_pinqU
+hasNumbersqUfuzzy_matchqUto_initialsqUAddressCleanerqUngram_similarityqeUprocess_addresses]q	(U
+admin_dictq
+UchattisgarhqUto_nanqUcorrections_dictqUdata_dirqUpunjabqUloc_similarityqUloggerqUbiharqUextract_talukqUload_admin_dictqUprintqUandhraqUmainqUupqUextract_locationqUgujaratqUextract_districtqeUadmin_dict_from_post]q(Uhierarchy_dictqhUpin_dictqUdist_by_taluk_dictqUcorrectionsq U
+filter_rowq!eUadmin_data_source_comparison]q"(Ugeo_dists_taluksq#Upo_dists_taluksq$U	geo_distsq%Upo_distsq&Ugeo_dictq'Ugeoq(Upoq)eUcreate_admin_dict]q*(Uhierarchy_dictq+Umainq,Upin_dictq-Udist_by_taluk_dictq.Ucorrectionsq/U
+filter_rowq0eUpandas_groupby_experiment]q1(Uvisited_taluksq2U	corr_itemq3Utaluk_groupsq4Ugbq5Ucountsq6Uwinnerq7Utnq8Ucorrection_itemq9Utgq:Udf_fragq;Udfq<Ucorrection_itemsq=U	repl_dictq>Upos_dfq?Ucounts_by_nameq@Utaluk_namesqAUwinning_tupleqBUgb_listqCUn1qDUn2qEeU	dist_diff]qF(h#h$h%h&h(h)eUclean_admin_post]qG(Uvisited_taluksqHU	corr_itemqIUtaluk_groupsqJUgbqKUcountsqLUwinnerqMUtnqNUcorrection_itemqOUtgqPUdf_fragqQUdfqRUcorrection_itemsqSU	repl_dictqTUpos_dfqUUcounts_by_nameqVUtaluk_namesqWUwinning_tupleqXUgb_listqYUn1qZUn2q[eUaddress_cleaner]q\(U
+dist_matchq]hUassign_talukq^U
+find_talukq_hUassign_districtq`hU	normalizeqaUfind_initialsqbhUfind_districtqcheUretrieval_by_pin]qd(Uget_address_by_pinqehUrequest_address_by_pinqfeUconsolidator]qg(h
+hhhhhhhUcreate_admin_dictqhhhhhheUconsolidater]qi(U
+admin_dictqjUchattisgarhqkUcorrections_dictqlUdata_dirqmUpunjabqnUprintqoUloggerqpUmainqqUcreate_admin_dictqrUload_admin_dictqsUandhraqtUupquUbiharqvUgujaratqweu.

@@ -1,0 +1,264 @@
+1009 Kar
+ADT 39
+Alur Sanna
+Ambemohor Basmati
+Amira Mogra Basmati
+Amira Tibar Basmati
+Amire Full Basmati
+Amras Non Basmati
+andra Sanna
+anekombu Sanna
+anekowe
+Annapoorna
+AP Raw Rice 5293
+AP Raw Rice Baptla Ponni
+AP Raw Rice PLR Soma
+AP Raw Rice SilkyRaw
+AP Raw Rice-1001
+AP Raw-Rice Sona Ponni
+Arcot Kichikdi
+Arti Mashuri
+B P T
+Balesuli
+Bangar Kaddi
+Bangarkhovi
+Bangarsanna
+Bantwal
+Basamti Dawat
+Basmati (Rose)
+Basmati Car
+Basmati Charmi
+Basmati Dawat Roz-(20KG)
+Basmati Golden Sela New
+Basmati Golden Sela Old
+Basmati Haryana Raw (New)
+Basmati Haryana Raw (Old)
+Basmati Haryana Sela(New)
+Basmati Haryana Sela(Old)
+Basmati Mogra (Raw/New)
+Basmati Mogra (Raw/Old)
+Basmati Paddy
+Basmati Silky Kohinoor
+Basmati Super Kohinoor
+Basmati Trophy
+Basmati U.P. (New)
+Basmati U.P. (Old)
+Basmati-370
+Basmati-385
+Basmati-386
+Basmatibar (Raw/New)
+Basmatibar (Raw/Old)
+Basmatidubar Raw/New
+Basmatidubar Raw/Old
+Basumathi
+Bellary Sanna
+Bile Kagga
+Boiled Rice
+Broken Rice
+Broken Rice(Kanki)
+BT Sona
+Byra (Red Rice)
+Champakali
+Chikkahalga
+China Sanna
+Chinoor
+Chinoor Non Basmati
+Chintamani Sanna
+CO 36
+CO-43 (Medium) Boiled
+Coarse
+Coarse (I.R.20)
+Coimbatore Kaddi
+Coimbatore Sanna
+Common
+CR 1009 (Coarse) Boiled
+Culture Ponni1
+Culture Ponni2
+Dappa
+Dash Non Basmati
+Dawal Full Basmati
+Dawat
+Dawat Kinki
+Dawat Mogra
+Dawat Tiwar
+Dhoon Full Basmati
+Dhoon Mogra Basmati
+Dhoon Tibar Basmati
+Dilkhus Basmati
+Doly Non Basmati
+Doon Dubar
+Doon FUll Basmati
+Doon Kinki Basmati
+Doon Mini
+Doon Mogra (Basmati
+Doon Tiwar Basmati
+Dosa Rice
+Dubraj Daboo Ji Non Basmati
+Duplicate Basmati
+Durbar Basmati
+Early St.
+EMR Boiled
+Export Parmal
+Farm Kaddi
+FCI Non Basmati
+FCI Parmal
+Fine
+Fine(Basmati)
+GMR Steam
+Golden Sela Best
+Govt. Quality
+Gowrisanna
+H.Y.V.
+Hallo Dubar Basmati
+Hallo Full Basmati
+Hallo Mogra Basmati
+Hallo Tibar Basmati
+Halubbulu (H 137)
+Hamsa St.
+Hansa
+Hassan Dappa
+HMT Fine Raw
+Hmt Rice-Non Basmati
+HMT Sona Best
+HMT Sona Medium
+III
+Intan
+IR 20
+IR 20 Fine Raw
+IR 20 Medium Boiled
+IR 50
+IR-8
+IR-8 Raw (New)
+IR-8 Raw (Old)
+IR-8 Sela (New)
+IR-8 Sela (Old)
+IR-8 Wand
+IR20 Parboiled
+Jaya
+Jeera Samba
+Jenugudu
+Jhilli Medium
+Jirigesanna
+Kachha Basmati
+Kaddi
+Kalimuch
+Kapila Sanna
+Karekagga
+Kattasambar
+Kesari (Coorg)
+Kichudi
+Kohinoor Durbar Basmati
+Kohinoor Full Basmati
+Kohinoor Kinki Basmati
+Kohinoor Mini Durbar Basmati
+Kohinoor Mogra Basmati
+Kohinoor Tibar Basmati
+Kohinoor Trophy Basmati
+Kohinoor Trophy Durbar
+Kolam-Non Basmati
+Lajbab Non Basmati
+Lashkari
+Long Bold
+Madhu (MR 136)
+Maharani Dubar Basmati
+Maharani Kinki Basmati
+Maharani Mini Dubar Basmati
+Maharani Mino Mogra basmati
+Maharani Mogra Basmati
+Maharani Tiwar Basmati
+Malnad gidda
+Mandya-vani
+Mangal (MR 272)
+Manila
+Masoori-Non Basmti
+Masuri
+Mataa Parboiled
+Medium
+Milled
+Mini Basmati
+Mnadyavani
+Mogra Basmati
+Motta (Coarse) Boiled
+Mull Bhatte
+Naya
+Nellore Sanna
+Non Basmati Jhilli Safri Best
+Non Basmati Kalimunch
+Noorjahan Non Basmati
+NT2
+Original Basmati
+Other
+Padma
+Parimal (New)
+Parimal (Old)
+Parmal
+Parmal (Paddy)
+Parmal Kachha
+Parmal Raw (New)
+Parmal Raw (Old)
+Parmal Sela
+Parmal Sela (Old)
+Parmal Selas (New)
+Parmal Wand
+Parmal Wand (Old)
+Phalguna
+Ponni
+Ponni (Fine) Boiled
+Ponni Fine Raw
+Ponni parboiled
+Popular Basmati
+PR-103
+PR-106
+PR-108
+PR-111
+Prakash
+Punjab Parmal Non Basmati
+Pusa Basmati (Paddy)
+Pusa Basmati Raw (New)
+Pusa Basmati Raw (Old)
+Pusa Basmati Sela (New)
+Pusa Basmati Sela (Old)
+Puspa (MR 301)
+Putta Bhatta (White Rice)
+Rajahamsa
+Rajbhog
+Rasi
+Ratnachudi (718 5-749)
+Rice Bran(Kukuf)
+Rice Floor
+Sadharan
+Sambar
+Sanna Bhatta
+Sanna Honsu
+Sannaanekal
+Sarbati Raw
+Sarbati Raw (New)
+Sarbati Raw (Old)
+Sarbati Sela
+Sarbati Sela (New)
+Sarbati Sela (Old)
+Sela Basmati
+Shakti
+Sharbati (Paddy)
+Sona
+Sona Boiled
+Sona Coarse
+Sona Fine
+Sona Mansoori Non Basmati
+Sona Medium
+Sona Raw New
+Sona Raw Old
+Sona St.
+Sujatha (B. T)
+Super Fine
+Suvarna Best
+Suvarna Medium
+Swadras Non Basmati
+Tallahamsa (Bilihamsa)
+Tericot Sela
+Tini Basmati
+Vani (Jet 2295)
+Vijaya
+White Car
+White Parboiled
+Zeeraga Samba Rawrice

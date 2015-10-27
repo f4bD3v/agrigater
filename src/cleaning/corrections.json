@@ -1,0 +1,33 @@
+{
+  "Andhra Pradesh":
+  {
+    "W Godavary": "West Godavari",
+    "Ananthapuramu": "Ananthapur",
+    "Anantapuramu": "Ananthapur",
+    "Anatapuramu": "Ananthapur",
+    "Y S R Kadapa": "Cuddapah",
+    "Visakha ": "Visakhaptnam "   
+  },
+  "Bihar": 
+  {
+    "E Champaran" : "East Champaran",
+    "Purnea" : "Purnia"
+  },
+  "Uttar Pradesh": {
+      "Badaun" : "Budaun",
+      "Divai" : "Dibai",
+      "Dist Bali" : "Dist Ballia",
+      "Choubepur Kanpur" : "Chaubepur Kanpur Nagar",
+      "Rura , Dist Kanpur" : "Rura, Dist Kanpur Dehat",
+      "Kanpur City" : "Kanpur Nagar",
+      "Bullandshar" : "Bulandshahr"
+  },
+  "Punjab": {
+    "Nawan Shahar" : "Nawanshahr",
+    "Nawanshar" : "Nawanshahr",
+    "Nawanshahar": "Nawanshahr"
+  },
+  "Gujarat": {
+    "Junagarh" : "Junagadh"
+  }
+}

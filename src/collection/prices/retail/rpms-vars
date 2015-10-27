@@ -1,0 +1,26 @@
+Market Centres:
+(approach not sustainable in case)
+TreeView1n${id}Checkbox
+Andhra Pradesh: 1 .. 5
+Arunachal Pradesh: 6 .. 7
+
+easy script this: for every checkbox selected, create controls for ${id} .. ${id+1}-1
+all checkboxes are already present in the html, simply find last ${id} in div with id="TreeView1n${id}Nodes"
+
+
+commodities
+TreeView2n1Checkbox (all Food Items) ... TreeView2n94CheckBox
+
+week-end dates
+TreeViewDaten1CheckBox ... TreeViewDaten959CheckBox
+table with year, dive with month nodes
+problem: some weeks have 5 weekend dates
+
+check if possible to download data for all dates
+
+need to find way to chunk requests, problem how to find index of last date (selectable date is always last weekend)
+
+State, Centre, Variety, Unit, 05/01/2001, 12/01/2001, ...
+Commodity in first td, find by checking if 2nd td empty
+data ... replace empty data cells with *
+Commodity in first td
