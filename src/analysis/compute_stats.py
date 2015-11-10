@@ -124,13 +124,19 @@ def arrival_over_time(d, outdir):
     save(d, outpath)
     return d
 
-def arrival_per_month(d, outdir):
-    print(bz.compute(d.head()))
+def arrival_by_month(d, outdir):
     df = odo.odo(d, pd.DataFrame)
     d = bz.Data(df)
-    d = bz.by(d.year, arrival=d.arrival.mean())
-    outpath = path.join(outdir, 'arrival_per_month.csv')
-    print(bz.compute(d.head()))
+    d = bz.by(d.month, arrival=d.arrival.mean())
+    outpath = path.join(outdir, 'arrival_by_month.csv')
+    save(d, outpath)
+    return
+
+def arrival_by_year(d, outdir):
+    df = odo.odo(d, pd.DataFrame)
+    d = bz.Data(df)
+    d = bz.by(d.year, arrival=d.arrival.sum())
+    outpath = path.join(outdir, 'arrival_by_year.csv')
     save(d, outpath)
     return
 
@@ -195,7 +201,6 @@ def get_group_coverage(df, date_range=False, loc=True):
 
 def get_coverage(df, date_range, outdir, group_cols = []):
     res_df = None
-    print(group_cols)
     if group_cols:
         grouped = df.groupby(group_cols)
         res_df = grouped.apply(lambda x: get_group_coverage(x, date_range, False))
@@ -210,7 +215,6 @@ def get_coverage(df, date_range, outdir, group_cols = []):
     commodity = df['commodity'].unique()[0]
     res_df.insert(0, 'commodity', commodity)
     outpath = path.join(outdir, '{}_coverage.csv'.format('-'.join(group_cols)))
-    print(res_df.head())
     save(res_df, outpath)
     return
 
@@ -313,9 +317,10 @@ def compute_stats(data_dir, filename):
     nas_over_time(df, commodity, outdir)
 
     ### NOTE: taking into account that arrivals I have not taken into account that arrivals are repeated
-    arrivals = d[['date', 'state', 'district', 'market', 'arrival', 'year', 'month']].distinct()
+    arrivals = d[['date', 'state', 'district', 'market', 'commodity', 'arrival', 'year', 'month']].distinct()
     arrival_by_year_month = arrival_over_time(arrivals, outdir)
-    arrival_per_month(arrival_by_year_month, outdir)
+    arrival_by_month(arrival_by_year_month, outdir)
+    arrival_by_year(arrivals, outdir)
     # arrival by state,( district,) market
     arrival_by_market(arrivals, outdir) 
     arrival_by_district(arrivals, outdir) 
