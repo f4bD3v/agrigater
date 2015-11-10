@@ -362,11 +362,12 @@ def main(task, mode):
     title = ''
     start = time.time()
     for folder in folders:
+        outpath = path.join(csv_dir, folder)
         if path.isfile(folder):
             continue
         category_dict[folder] = []
 
-        os.chdir(path.join(csv_dir, folder))
+        os.chdir(outpath)
         if task == 'merge':
             files = glob.glob('*.csv')
             merge(folder, files, mode)
