@@ -239,7 +239,7 @@ def clean(files, mode):
                 os.makedirs('cleaned')
             outpath = path.join('cleaned', cleaned_fn)
             print(outpath)
-            if os.path.isfile(outpath):
+            if path.isfile(outpath):
                 os.remove(outpath)
             odo.odo(d, outpath)
             #df_cleaned = odo.odo(d, pd.DataFrame)
@@ -265,7 +265,7 @@ def clean(files, mode):
             if not path.isdir('cleaned'):
                 os.makedirs('cleaned')
             outpath = path.join('cleaned', cleaned_fn)
-            if os.path.isfile(outpath):
+            if path.isfile(outpath):
                 os.remove(outpath)
             df.to_csv(cleaned_fn, index=False)
         ### TODO: use blaze to load commodity files, process them and save to desk cleaned version
@@ -326,7 +326,7 @@ def merge(folder, files, mode, stage='integrated', replace=False):
             #print(quick_fix)
             #os.system(quick_fix)
             print('Stacking all {} files ..'.format(commodity))
-            if os.path.isfile(target):
+            if path.isfile(target):
                 os.system('/bin/bash -c \"rm {}\"'.format(target))
             # "Bottle gourd"
             command = '/bin/bash -c \"cat {0}_*.csv > {1}\"'.format(orig_commodity, target)
@@ -362,6 +362,8 @@ def main(task, mode):
     title = ''
     start = time.time()
     for folder in folders:
+        if path.isfile(folder):
+            continue
         category_dict[folder] = []
 
         os.chdir(path.join(csv_dir, folder))
