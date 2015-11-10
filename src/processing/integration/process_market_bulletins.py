@@ -218,8 +218,8 @@ def clean(files, mode):
             ### Fixes issue with two added months on date
             d = bz.transform(d, date=d.date.map(lambda x: datetime.strptime(x, '%d/%m/%Y').date(), 'date'))
 
-            commodity = list(d.commodity.unique())[0]
-            varieties = list(d.variety.unique())
+            commodity = list(d.commodity.distinct())[0]
+            varieties = list(d.variety.distinct())
             ### Removing unnecessary varieties
             ### TODO: test effectiveness
             if [commodity, 'Other'] == varieties:
