@@ -6,10 +6,11 @@ import re
 import sys
 import datetime
 import os
+from os import path
 from time import sleep
 from optparse import OptionParser
 from random import randint
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 
 usage_str = """
 This scripts downloads daily retail food prices from http://fcainfoweb.nic.in/PMSver2/Reports/Report_Menu_web.aspx. Results are saved in CSV format to csv_out/ directory.
@@ -27,9 +28,7 @@ Examples:
     python2 download_fcainfoweb_daily.py -r 20/01/2013 20/03/2013 -f
 """
 
-data_dir = '../../../../data/fca'
-csv_out_dir = os.path.join(data_dir, 'csv')
-raw_out_dir = os.path.join(data_dir, 'html')
+data_dir = '../../../../data'
 price_type = '' 
 
 # Easiest way to get a new cookie is to visit http://fcainfoweb.nic.in/PMSver2/Reports/Report_Menu_web.aspx with your browser and copy the cookie ASP.NET_SessionId here
@@ -116,12 +115,17 @@ def to_csv(date_string, html):
     if len(tables) < 3:
         return
 
-    out_file_name = csv_out_dir + '/' + price_type + '_' + re.sub('/', '-', date_string) + '.csv'
-    print "### Output file:", out_file_name
-    out_file = open(out_file_name, "w")
+    outfile = price_type + re.sub('/', '-', date_string) + '.csv'
+    outdir = path.join(data_dir, outdir)
+    if not path.exists(outdir):
+        os.makedirs(outdir)
+    outpath = path.join(outdir, outfile)
+    print "### Output file:", outfile
+    #out= open(out_file_name, "w")
 
     # parsing 
     rows = []
+    df_rows = []
     for t in tables:
         rows = t.findAll('tr')
         header_row = rows[0]
@@ -153,10 +157,37 @@ def to_csv(date_string, html):
             for i in xrange(nproducts):
                 product = products[i]
                 price = cells[i].getText()
+                row = [date_string, zone, city_name, product, price]
+                df_rows.append(row)
+
+        df = pd.DataFrame(df_rows)
+        df.replace({'NR' : np.nan}, regex=True)
+        pd.DataFrame.to_csv(df, outfile, index=False, quotechar='"')
+
+        """
+        data_rows = rows[1:]
+        zone = ''
+        for row in data_rows:
+            cells = row.findAll('td')
+            if not cells:
+                continue
+            if len(cells) < nproducts:
+                zone=cells[0].getText().capitalize()
+                continue
+            city_name = cells[0].getText()
+            if re.search(r'(Maximum|Minimum|Modal) Price', city_name):
+                # ignore final rows
+                continue
+            city_name = process_name(city_name)
+            cells = cells[1:]
+            for i in xrange(nproducts):
+                product = products[i]
+                price = cells[i].getText()
                 if 'NR' in price:
                     price = '*'
                 csv_row = ','.join([date_string, zone, city_name, product, price])+'\n'
                 out_file.write(csv_row)
+        """
 
     out_file.close()
 
@@ -186,12 +217,6 @@ def validate_date(date_string):
     day, month, year = int(match.group(1)), int(match.group(2)), int(match.group(3))
     date = datetime.date(year, month, day)
     return date
-
-def check_out_dir():
-    if not os.path.exists(csv_out_dir):
-        os.makedirs(csv_out_dir)
-    if not os.path.exists(raw_out_dir):
-        os.makedirs(raw_out_dir)
 
 def usage():
     print usage_str
@@ -224,7 +249,6 @@ if __name__ == "__main__":
     if options.price_type:
         price_type = options.price_type
 
-    check_out_dir()
     if options.date:
         date_str = options.date
         date = validate_date(date_str)

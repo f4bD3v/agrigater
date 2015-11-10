@@ -1,15 +1,17 @@
 import os
 import sys
-from os import path
+from os import path, listdir
 import glob
 import json
 import pylev
 import ngram
+import time
 import re
+from datetime import datetime
 import math
-import datetime
 import pandas as pd
 import numpy as np
+import odo
 import logging
 import yaml
 from bson import json_util
@@ -17,6 +19,26 @@ from bson import json_util
 from mongo_handler import MongoDB
 
 data_dir = '../../../data'
+
+### TODO: use shelve to save such python dictionaries instead of json
+market_corrections = {
+   'Mkt.'  : '',
+   'Market' : '',
+   'Yard' : '',
+   ',RBZ' : '',
+   '(AP)' : '',
+   '(UP)' : '',
+   '(BH)' : '',
+   '(KA)' : '',
+   ' Hqs' : '',
+   '(main)' : '',
+   r'\s+' : ' ',
+   r' ,$' : '',
+   # google geocoding was able to make this inference itself
+   'V.Kota' : 'Venkatagirikota',
+   'Fish,Poultry & Egg , Gazipur' : 'Fish and Poultry Market, Gazipur',
+   'Udaipur\(F&V\)' : 'Vegetable Market, Udaipur'
+}
 
 # http://stackoverflow.com/questions/455580/json-datetime-between-python-and-javascript/32224522#32224522
 class DateTimeJSONEncoder(json.JSONEncoder):
@@ -66,6 +88,114 @@ def prepare_fca():
 		}
 	"""
 	return
+
+
+def to_nan(s):
+	if s == None:
+	    s = np.nan
+	return s
+
+def add_location(row, market_locations):
+	# Problem: market names from commodity files and markets are not integrated
+	### NEED A SYSTEM THAT DOES PERIODICAL CLEANING ACCORDING TO CERTAIN MAPPINGS
+	# what to do if market is given in series but does not have a profile
+	index = '_'.join([row['state'].strip(), row['market'].strip()])
+	dist = None
+	taluk = None
+	if not index in market_locations:
+		index = re.sub('(\(.*\))', '', index)
+	if 'Dimapur' in index:
+		index = 'Nagaland_Dimapur'
+	if index in market_locations:
+		dist = market_locations[index]['District']
+		taluk = market_locations[index]['Market']
+
+	# TODO: WHEN MARKET NOT IN MARKET LOCATIONS?
+	# check if market can be found in market collection. 
+	# --> If not, insert basic version with only market and state name fields filled
+
+	# else add nan values - except for state (district aggregation still possible)
+	# states names of final df have to again be cleaned
+	return pd.Series([to_nan(dist), to_nan(taluk)], ['district', 'taluk'])
+
+def create_comm_doc(df, market_locations):
+	#dfdict = {}
+	### NOTE: quick fix, because no regex in blaze batch cleaning
+	df = df.replace({ 'market' : market_corrections}, regex=True)
+	### NOTE: if downloaded df empty, don't save bulletin --> implemented in get_agmarknet, still needs testing
+	### TODO: FILL EMPTY HERE
+
+	df['date'] = df['date'].apply(lambda x: datetime.strptime(x, "%Y-%m-%d").date())
+	#df['weight'] = df['weight'].astype(float)
+	#df['price'] = df['price'].astype(float)
+	location_df = df.apply(add_location, axis=1, args=[market_locations])
+	fdf = pd.concat([df, location_df], axis=1)
+	#dfjson = fdf.to_json(orient='records')
+	#dfdict = json.loads(dfjson)
+	#return dfdict
+	return fdf
+
+### TODO: integrate with FCA data
+def prepare_commodities(market_locations, mode, overwrite):
+	start = time.time()
+	agmarknet_dir = path.join(data_dir, 'agmarknet')
+	if mode == 'batch':
+		src_dir = path.join(agmarknet_dir, 'by_commodity')
+	else:
+		src_dir = path.join(agmarknet_dir, 'by_date_and_commodity')
+	folders = listdir(src_dir)
+	init_dir = os.getcwd()
+	for folder in folders:
+		if not path.isdir(path.join(src_dir, folder)):
+			continue
+		outdir = os.path.abspath(path.join(src_dir, folder, 'integrated'))
+		if not path.isdir(outdir):
+			os.makedirs(outdir)
+
+		indir = os.path.abspath(path.join(src_dir, folder, 'cleaned'))
+		os.chdir(indir)
+		#os.chdir(data_dir)
+		files = glob.glob('*cleaned.csv')
+		for filename in files:
+			os.chdir(indir)
+			outfile = filename.replace('_cleaned.csv', '_localized.csv') # from commodiy name
+			outpath = path.join(outdir, outfile)
+			if os.path.isfile(outpath):
+				if overwrite:
+					os.remove(outpath)
+				else:	
+					print('Skipping {} ..'.format(outpath))
+					continue
+			print('Loading {} ..'.format(filename))
+			header = 0 
+			if mode == 'online':
+				header = False
+			df = pd.DataFrame.from_csv(filename, index_col=None, header=header)	
+			#df.columns = ['date', 'state', 'market', 'commodity', 'variety', 'weight', 'min', 'max', 'modal']
+			# NOTE: assigning header not necessary, since contained in cleaned csv
+			print('Adding location ..')
+			df = create_comm_doc(df, market_locations)
+			df['date'] = df['date'].apply(lambda x: x.strftime('%Y-%m-%d'))
+			os.chdir(init_dir)
+			### TODO:
+			# - batch: save to => by_commodity/integrated
+			# - online: save to => by_state_and_commodity/integrated
+			### TODO: write script that stacks integrated files to batch
+
+			print('Saving {} ..'.format(filename))
+			# NOTE: dumping integrated df to csv (instead of json) => use for analysis
+			odo.odo(df, outpath)
+			print()
+			# df.to_csv(outpath, index=False)
+	end = time.time()
+	unit = 'minutes'
+	elapsed = int((end - start) // 60)
+	if elapsed > 60:
+		elapsed = elapsed // 60
+		unit = 'hours'
+	print('Commoditiy integration ({2}) completed in {0} {1}!'.format(elapsed, unit, mode))
+	return
+
 
 def prepare_states(locs):
 	census = json.load(open(path.join(data_dir, 'census', 'population_states.json'), 'r'))
@@ -569,12 +699,16 @@ def prepare_production(db):
 	### TODO: make sure crop names match with crop names 
 	return
 
-def main(call):
+def main(call, overwrite=False, mode=False):
+	if overwrite:
+		overwrite = True
+		print(overwrite)
 	config = yaml.load(open('../../db/db_config.yaml', 'r'))
 	db = MongoDB(config['meteordb'], config['address'], config['meteorport'])
 
 	locs = json.load(open(path.join(data_dir, 'admin', 'locations_serialized.json'), 'r'))
 	# schema: {"Statename" : {"DistrictName1" : ["Taluks"], "DistrictName2": ["Taluks"], .. }}
+	market_locs = json.load(open(path.join(data_dir, 'admin', 'market_locations_serialized.json'), 'r'))
 	if call == 'topology':
 		prepare_topology(locs, db)
 	elif call == 'states':
@@ -583,10 +717,15 @@ def main(call):
 		prepare_districts(locs)
 	elif call == 'markets':
 		prepare_markets(cont = True)
+	elif call == 'commodities':
+		if not mode in ['batch', 'online']:
+			print('Error! Processing mode needs to be set')
+			sys.exit()
+		prepare_commodities(market_locs, mode, overwrite)
 
 if __name__ == '__main__':
 	check = ['commodities', 'states', 'districts', 'markets', 'topology']
 	if len(sys.argv) > 1 and sys.argv[1] in check:
 		main(*sys.argv[1:])
 	else:
-		print('usage: {0} (states|districts|markets|commodities|topology)'.format(sys.argv[0]))
+		print('usage: {0} (states|districts|markets|commodities|topology) overwrite [batch|online] '.format(sys.argv[0]))

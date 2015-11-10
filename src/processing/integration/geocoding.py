@@ -3,6 +3,7 @@
 import requests
 import pandas as pd
 import numpy as np
+import sys
 import os
 from os import path
 import glob
@@ -63,6 +64,10 @@ def add_coordinates(row, logger):
 	if not math.isnan(pin):
 		pin = int(pin)
 	coordinates, geojson = get_market_coordinates(pin, row['Market'], row['District'], row['State'])
+	if coordinates == None:
+		print(geojson)
+		coordinates['lat'] = None
+		coordinates['lng'] = None
 	logger.info('Retrieved following geocode json for market location...')
 	logger.info(geojson)
 	res_num = len(geojson['results'])
@@ -72,7 +77,8 @@ def add_coordinates(row, logger):
 	time.sleep(2)
 	return series
 
-def main():
+def main(replace):
+	replace = bool(replace)
 	logger = logging.getLogger('markets_geolocate')
 	logger.setLevel(logging.INFO)
 	fh = logging.FileHandler('geolocate_markets.log')
@@ -82,17 +88,32 @@ def main():
 	src_dir = path.join(data_dir, 'markets')
 	os.chdir(src_dir)
 	files = glob.glob('*localized.csv')
+	outdir = path.join(data_dir, 'admin/geo')
 	coordinate_dfs = []
-	for file in files:
-		df = pd.DataFrame.from_csv(file, index_col=None)
+	for filename in files:
+		outfile = filename.replace('_localized', '_coordinates')
+		coordinate_df = None
+		if path.isfile(outfile) and not replace:
+			os.chdir(curr_dir)
+			coordinate_df = pd.DataFrame.from_csv(path.join(outdir, outfile), index_col=None)
+			os.chdir(src_dir)
+			continue
+		df = pd.DataFrame.from_csv(filename, index_col=None)
 		df = df.replace('*', np.nan)
 		coordinate_df = df.apply(add_coordinates, axis=1, args=[logger])
-		coordinate_dfs.append(coordinate_df)
+		os.chdir(curr_dir)
+		coordinate_df.to_csv(path.join(outdir, outfile), index_col=None)
+		os.chdir(src_dir)
 		time.sleep(180)
+		coordinate_dfs.append(coordinate_df)
 	os.chdir(curr_dir)
 	coordinate_df = pd.concat(coordinate_dfs)
-	pd.DataFrame.to_csv(coordinate_df, path.join(data_dir, 'admin/geo', 'market_coordinates.csv'))
+	pd.DataFrame.to_csv(coordinate_df, path.join(outdir, 'market_coordinates.csv'))
 	return
 
 if __name__ == "__main__":
-	main()	
+	### TODO: use argparse!!!	
+	if len(sys.argv) > 1 and bool(sys.argv[1]) in [True, False]:
+		main(*sys.argv[1:])
+	else:
+		print('usage: {} (replace=True|False)'.format(sys.argv[0]))

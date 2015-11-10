@@ -6,7 +6,7 @@ import json
 import blaze as bz, odo
 ### extract dict of crops with respective lists of varieties and use it to create a mapping for cleaning
 
-spelling_dict = {
+commodity_corrections = {
 	'Soanf' : 'Saunf',
 	'Amaranthus' : 'Amaranth',
 	'Lilly' : 'Lily',
@@ -33,6 +33,12 @@ spelling_dict = {
 	'Pigs' : 'Pig',
 	'BOP' : 'Bird of Paradise',
 	'Jowar(Sorgham)' : 'Sorghum'
+}
+
+state_corrections = {
+	'Orissa' : 'Odisha',
+	'Chattisgarh' : 'Chhattisgarh',
+	'Uttrakhand' : 'Uttarakhand'
 }
 
 ### this should be enough to change pandas to blaze code for processing large files
@@ -94,8 +100,9 @@ def clean_csvs():
 				d = bz.transform(d, grade=d.grade.map(lambda x: x.strip(), 'string'))
 
 			d = bz.transform(d, commodity=d.commodity.map(lambda x: x.strip(), 'string'))
-			d = bz.transform(d, commodity=d.commodity.map(lambda x: spelling_dict[x] if x in spelling_dict else x, 'string'))
+			d = bz.transform(d, commodity=d.commodity.map(lambda x: commodity_corrections[x] if x in commodity_corrections else x, 'string'))
 			d = bz.transform(d, state=d.state.map(lambda x: x.strip(), 'string'))
+			d = bz.transform(d, state=d.state.map(lambda x: state_corrections[x] if x in state_corrections else x, 'string'))
 			d = bz.transform(d, market=d.market.map(lambda x: x.strip(), 'string'))
 
 	return
@@ -155,9 +162,7 @@ def extract_commodities():
 				commodity_names[commodity]['category'] = [folder]
 			elif not commodity_names[commodity]['category']:
 				commodity_names[commodity]['category'] = [folder]
-			if not folder:
-				print(" fuck this")
-				break
+
 			### How can the category field be None?
 			print(commodity, commodity_names[commodity], folder)
 			if not folder in commodity_names[commodity]['category']:
