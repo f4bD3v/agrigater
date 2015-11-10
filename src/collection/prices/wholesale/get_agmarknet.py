@@ -52,6 +52,7 @@ def download_data(date_string):
     url="http://agmarknet.nic.in/cmm2_home.asp?comm={0}&dt={1}".format(commodity.strip("\""), date_string)
     print(url)
     r = requests.get(url)
+    print(r.text)
     #response = urllib2.urlopen(req)
     #result_html = response.read()
     html_to_csv(outpath, date_string, commodity, r.text)

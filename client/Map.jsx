@@ -3,8 +3,9 @@ Map = React.createClass({
   // --> meaning div for which to load the map will already be there
   componentDidMount: function() {
     // TODO: set map as state variable
-    self = this
-    self.L = L
+    self = this;
+    self.L = L;
+    //self.L.Icon.Default.imagePath = '/images';
     self.map = self.L.map('map').setView(new L.LatLng(21.146633, 79.088860), 5);
     var tiles = self.L.tileLayer.provider('Esri.WorldPhysical');
     // Alternatives: Esri.(WorldStreetMap|WorldTopoMap|WorldImagery)
@@ -69,11 +70,12 @@ Map = React.createClass({
       };
       districtL = omnivore.topojson.parse(districts);
       districtL.setStyle(diststyle);
+      // how to include an onEachFeature function here?
+      // http://palewi.re/posts/2012/03/26/leaflet-recipe-hover-events-features-and-polygons/
+      // http://leafletjs.com/examples/choropleth.html
       districtL.addTo(self.overlays);
       self.overlayObj['Districts'] = districtL;
-      console.log(self.overlayObj)
       self.overlayCountdown -= 1;
-      console.log(self.overlayCountdown)
       if(self.overlayCountdown == 0) {
         console.log('Changing overlay dependency status..')
         self.overlayDep.changed();
@@ -87,19 +89,45 @@ Map = React.createClass({
         color: "#01a000",
         fillColor: "#02b300"
       };
+
+      var marketMarker = L.AwesomeMarkers.icon({
+        //prefix: 'fa',
+        //icon: 'coffee',
+        markerColor: 'green'  // '#02b300'
+      });
+
+      var clusterOptions = { 
+        maxClusterRadius: 130, // you can increase this, try 250px
+        addRegionToolTips: true,
+      };
+
+      var clusterGroup = new L.MarkerClusterGroup(clusterOptions);
+      /*
+      features = markets['features']
+      for (var i = 0; i < features.length; i++) {
+        L.marker(latlng, {icon: marketMarker, regions: [feature.properties.district, feature.properties.state]}).addTo(clusterGroup).bindPopup(feature.properties.name + ', ' + feature.properties.district);
+        console.log(features[i])
+      }*/
       var marketL = self.L.geoJson(markets['features'], {
-        style: markerStyle,
+        //style: markerStyle,
         pointToLayer: function(feature, latlng) {
-          return new L.CircleMarker(latlng, {radius: 5, fillOpacity: 1, weight: 1});
+          //return new L.CircleMarker(latlng, {radius: 5, weight: 2})
+          //icon: marketMarker
+          return new L.marker(latlng, {icon: marketMarker, regions: [feature.properties.district, feature.properties.state]});
+          // new L.marker(latlng, {icon: marketMarker, regions: [feature.properties.district, feature.properties.state]}).addTo(clusterGroup).bindPopup(feature.properties.name + ', ' + feature.properties.district);
+          // add 'India' after market geocoding fixed
         },
         onEachFeature: function(feature, layer) {
           layer.bindPopup(feature.properties.name + ', ' + feature.properties.district);
         }
       });
-      self.overlayObj['Markets'] = marketL;
-      marketL.addTo(self.overlays);
+
+      clusterGroup.addLayer(marketL);
+      //self.overlayObj['Markets'] = marketL;
+      //marketL.addTo(self.overlays);
+      self.overlayObj['Markets'] = clusterGroup;
+      clusterGroup.addTo(self.overlays);
       self.overlayCountdown -= 1;
-      console.log(self.overlayCountdown)
       if(self.overlayCountdown == 0) {
         console.log('Changing overlay dependency status..')
         self.overlayDep.changed();

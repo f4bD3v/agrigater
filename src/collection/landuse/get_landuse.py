@@ -124,16 +124,10 @@ for state, state_id in state_options.items():
 			# request headers
 			#print(resp.request.headers)
 			# content field holds response as bytestring!
+			if 'Server Error' in resp.content
 			xls_file = resp.content
 			print(xls_filename)
 			# save bytes to file --> no need for Response.iter_content, because files are small
 			with open(path.join(data_dir, xls_filename), 'wb') as f:
 				f.write(xls_file)
 				f.close()
-
-"""
-	opener = urllib2.build_opener()
-    opener.addheaders.append(('Cookie', 'ASP.NET_SessionId=' + cookie))
-    req = opener.open(main_url, params)
-    result_html = req.read()
-"""

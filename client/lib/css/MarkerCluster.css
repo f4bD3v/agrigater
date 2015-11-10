@@ -1,0 +1,5 @@
+.leaflet-cluster-anim .leaflet-marker-icon,
+.leaflet-cluster-anim .leaflet-marker-shadow {
+  transition: transform 0.4s ease-out, opacity 0.4s ease-in;
+  -webkit-transition: -webkit-transform 0.4s ease-out, opacity 0.4s ease-in;
+}
