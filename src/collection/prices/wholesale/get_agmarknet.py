@@ -7,9 +7,7 @@ import datetime
 import os
 from time import sleep
 from optparse import OptionParser
-from random import randint
 from bs4 import BeautifulSoup
-import urllib
 import pandas as pd
 import numpy as np
 from os import path
@@ -34,17 +32,31 @@ data_dir = '../../../../data/agmarknet'
 
 commodity = ''
 category = ''
+fs_category = ''
 
 
 def download_data(date_string):
+    outdir = path.join(data_dir, 'by_date_and_commodity', fs_category)
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+    outfile = '_'.join([commodity, re.sub('/', '-', date_string) + '.csv']).replace('/', ',')
+    #outfile = re.sub(r'\s+', '', outfile)
+    outpath = path.join(outdir, outfile)
+    #outpath = outpath.replace('(', '\(').replace(')', '\)')
+    print(outpath)
+
+    if os.path.isfile(outpath):
+        return
+
     """Download weekly prices in HTML and save them to file CSV"""
-    url = "http://agmarknet.nic.in/cmm2_home.asp?comm=%s&dt=%s" % (commodity, date_string)
+    url="http://agmarknet.nic.in/cmm2_home.asp?comm={0}&dt={1}".format(commodity.strip("\""), date_string)
+    print(url)
     r = requests.get(url)
     #response = urllib2.urlopen(req)
     #result_html = response.read()
-    html_to_csv(date_string, commodity, r.text)
+    html_to_csv(outpath, date_string, commodity, r.text)
 
-def html_to_csv(date_string, commodity, html):
+def html_to_csv(outpath, date_string, commodity, html):
     # Remove some stuff
     html = re.sub(r'&nbsp;?', '', html)
     html = re.sub(r'</?font[^>]*>', '', html)
@@ -85,18 +97,15 @@ def html_to_csv(date_string, commodity, html):
     #                + re.sub('/', '_', date_string) + '.csv'
     #raw_file_name = raw_out_dir + '/' + commodity  + '_' \
     #                + re.sub('/', '_', date_string) + '.html'
-    outdir = path.join(data_dir, 'by_date_and_commodity', category)
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-    outfile = '_'.join([commodity, re.sub('/', '-', date_string) + '.csv'])
-    outpath = path.join(outdir, outfile)
-    print(outpath)
+
 
     #print "### Output file:", out_file_name
     #outfile = open(outfile_name, "w")
     df = pd.DataFrame(all_rows)
+    # if the resulting frame is empty => do not save and move on
+    if df.empty:
+        return
     df = df.apply(lambda x: x.str.strip(), axis=1)
-    print(df)
     ## add new columns
     df.drop(3, axis=1, inplace=True)
     # insert columns
@@ -117,13 +126,13 @@ def html_to_csv(date_string, commodity, html):
     df.replace('^\*$', np.nan, regex=True, inplace=True)
     #df.replace('*', np.nan, regex=True, inplace=True)
     df[4] = df[4].replace(',', ';')
-    print(df.head())
-    print(df.tail())
+    df.insert(3, 'Category', category)
     #df['Tonnage'] = df['Tonnage'].str.replace('^$', '-')
     ### pandas add column at specific index
     ### TODO: change this to pandas column operations!
     #print(df.head())
     pd.DataFrame.to_csv(df, outpath, header=False, index=False, quotechar='"')
+    return
     """
     for r in all_rows:
         # clean out NR values
@@ -206,16 +215,19 @@ if __name__ == "__main__":
 
     if options.category:
         category = options.category
+        category = re.sub('\s+', ' ', category.strip('"'))
         print(category)
-        category = re.sub('\s+', ' ', category.replace(',', ' '))
-        category = '_'.join(category.split(' '))
-        print(category)
+        fs_category = re.sub('\s+', ' ', category.replace(',', ' '))
+        fs_category = '_'.join(fs_category.split(' '))
+        print(fs_category)
 
     if not options.commodity:
         usage()
         sys.exit("No commodity given!")
     else:
         commodity = options.commodity
+        commodity = commodity.strip('"')
+        print(commodity)
     if options.date:
         date_str = options.date
         date = validate_date(date_str)

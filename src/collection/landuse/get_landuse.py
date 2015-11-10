@@ -45,7 +45,7 @@ for id in ids:
 	# remove numbers from label
 	label = re.sub('(\d+|\.)', '', a.text_content()).strip()
 	buttons[button_id] = [category, sub_category, label]
-	
+
 print(buttons)
 
 state_options = {
@@ -93,7 +93,7 @@ event_validation = html.cssselect("input#__EVENTVALIDATION")[0].value
 print(viewstate)
 print(event_validation)
 
-### PROBLEM IS VIEWSTATE GETS MODIFIED BY CLICKING 
+### PROBLEM IS VIEWSTATE GETS MODIFIED BY CLICKING
 for state, state_id in state_options.items():
 	for year in option_vals:
 		for button, value_list in buttons.items():
@@ -117,10 +117,10 @@ for state, state_id in state_options.items():
 				'DropDownList1' : str(state_id),
 				'DropDownList2' : year,
 				'DropDownList3' : '2' # return excel
-			}
-			resp = s.post(url, stream=True, data=params, headers=item_request_headers)
-			# response headers
-			#print(resp.headers)
+                        }
+                        resp = s.post(url, stream=True, data=params, headers=item_request_headers)
+                        print(resp.headers)
+                        print(resp.text)
 			# request headers
 			#print(resp.request.headers)
 			# content field holds response as bytestring!

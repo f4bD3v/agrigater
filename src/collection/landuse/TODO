@@ -1,4 +1,4 @@
 For states in postcodes data run script:
-- write bashcript that call python script for combination of
+- write bashcript that calls python script for combination of
     * state
     * date
