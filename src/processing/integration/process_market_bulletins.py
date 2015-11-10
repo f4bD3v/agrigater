@@ -363,7 +363,7 @@ def main(task, mode):
     start = time.time()
     for folder in folders:
         outpath = path.join(csv_dir, folder)
-        if path.isfile(folder):
+        if path.isfile(outpath):
             continue
         category_dict[folder] = []
 
