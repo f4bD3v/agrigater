@@ -94,7 +94,7 @@ def nas_over_time(df, commodity, outdir):
     # Merge stat dfs on year, month index
     commodity_df = arrival_df.merge(price_df, left_index=True, right_index=True)
     commodity_df.insert(0, 'commodity', commodity)
-    outpath = path.join(outdir, 'nas_by_month_and_year.csv')
+    outpath = path.join(outdir, 'nas_by_year-month.csv')
     #cidx_df = df['year', 'month', 'commodity']
     ### NOTE: inserting NA rows 
     # out_df = pd.merge(idx_df, commodity_df, how='outer', on=['year', 'month', 'commodity'])
@@ -120,7 +120,7 @@ def arrivals_per_variety_over_time(d, outdir):
 
 def arrival_over_time(d, outdir):
     d = bz.by(bz.merge(d.year, d.month), arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'arrival_over_time.csv')
+    outpath = path.join(outdir, 'tonnage_by_year_month.csv')
     save(d, outpath)
     return d
 
@@ -128,7 +128,7 @@ def arrival_by_month(d, outdir):
     df = odo.odo(d, pd.DataFrame)
     d = bz.Data(df)
     d = bz.by(d.month, arrival=d.arrival.mean())
-    outpath = path.join(outdir, 'arrival_by_month.csv')
+    outpath = path.join(outdir, 'tonnage_by_month.csv')
     save(d, outpath)
     return
 
@@ -136,35 +136,35 @@ def arrival_by_year(d, outdir):
     df = odo.odo(d, pd.DataFrame)
     d = bz.Data(df)
     d = bz.by(d.year, arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'arrival_by_year.csv')
+    outpath = path.join(outdir, 'tonnage_by_year.csv')
     save(d, outpath)
     return
 
 ### need additional group by and sum after appending has produced figures for all markets
 def arrival_by_market(d, outdir):
     do = bz.by(d.market, arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'arrivals_per_market.csv')
+    outpath = path.join(outdir, 'tonnage_by_market.csv')
     save(do, outpath)
     do = bz.by(bz.merge(d.market, d.commodity), arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'arrivals_commodity_per_market.csv')
+    outpath = path.join(outdir, 'commodity_tonnage_by_market.csv')
     save(do, outpath)
     return
 
 def arrival_by_district(d, outdir):
     do = bz.by(d.district, arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'arrivals_per_district.csv')
+    outpath = path.join(outdir, 'tonnage_by_district.csv')
     save(do, outpath)
     do = bz.by(bz.merge(d.market, d.commodity), arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'arrivals_commodity_per_district.csv')
+    outpath = path.join(outdir, 'commodity_tonnage_by_district.csv')
     save(do, outpath)
     return
 
 def arrival_by_state(d, outdir):
     do = bz.by(d.state, arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'arrivals_per_state.csv')
+    outpath = path.join(outdir, 'tonnage_by_state.csv')
     save(do, outpath)
     do = bz.by(bz.merge(d.market, d.state), arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'arrivals_commodity_per_state.csv')
+    outpath = path.join(outdir, 'commodity_tonnage_by_state.csv')
     save(do, outpath)
     return
 
@@ -214,7 +214,7 @@ def get_coverage(df, date_range, outdir, group_cols = []):
         res_df.reset_index(inplace=True)
     commodity = df['commodity'].unique()[0]
     res_df.insert(0, 'commodity', commodity)
-    outpath = path.join(outdir, '{}_coverage.csv'.format('-'.join(group_cols)))
+    outpath = path.join(outdir, 'coverage_by_{}.csv'.format('-'.join(group_cols)))
     save(res_df, outpath)
     return
 
@@ -233,7 +233,7 @@ def get_loc_coverage(df, subset_cols, group_cols, date_range, outdir, size_col=N
     commodity = df['commodity'].unique()[0]
     merged_df.insert(0, 'commodity', commodity)
     ### now set reset_index and add commodity column
-    outpath = path.join(outdir, '{}_coverage.csv'.format('-'.join(group_cols)))
+    outpath = path.join(outdir, 'coverage_by_{}.csv'.format('-'.join(group_cols)))
     save(merged_df, outpath)
     if len(group_cols) > 2:
         return merged_df 
@@ -245,7 +245,7 @@ def mean_by_month(df, outdir, level):
     df.drop('year', axis=1, inplace=True)
     df = df.groupby('month').mean()
     df.reset_index(inplace=True)
-    outpath = path.join(outdir, 'avg_by_month_{}_coverage.csv'.format(level))
+    outpath = path.join(outdir, 'coverage_by_{}-month.csv'.format(level))
     save(df, outpath)
     return
 
@@ -369,12 +369,13 @@ def compute_stats(data_dir, filename):
     """
     return
 
-### TODO: test extra aggregation 
+### TODO: how to aggregate coverage?
 def arrival_aggregation(data_dir):
     all_dir = path.join(data_dir, 'stats', 'all')
     os.chdir(all_dir)
     files = glob.glob('*.csv')
-    files = filter(lambda x: 'arrivals_per' in x, files) 
+    files = filter(lambda x: 'tonnage' in x and not 'commodity' in x, files) 
+    ### -
     for filename in files:
         group_col = filename.rstrip('.csv').split('_')[-1]
         df = pd.DataFrame.from_csv(filename, index_col = None)
@@ -423,6 +424,7 @@ def main():
         os.chdir(path.join(folder, 'integrated'))
         files = glob.glob('*.csv')
         for filename in files:
+            print('Computing stats for {}'.format(filename))
             compute_stats(data_dir, filename)
             ### TODO: write unpack and print function!
         os.chdir(src_dir)
