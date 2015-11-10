@@ -223,7 +223,7 @@ def clean(files, mode):
             ### Removing unnecessary varieties
             ### TODO: test effectiveness
             if [commodity, 'Other'] == varieties:
-                d = bz.transform(d, variety=d.variety.map(lambda x: commodity))
+                d = bz.transform(d, variety=d.variety.map(lambda x: commodity, 'string'))
 
             ### TODO: merge related filenames
 
