@@ -22,7 +22,7 @@ def save(df, outpath):
     numerics = ['float16', 'float32', 'float64']
     if os.path.isfile(outpath):
         os.remove(outpath)
-    if isinstance(df, bz.expr.split_apply_combine.By):
+    if isinstance(df, bz.expr.split_apply_combine.By) or isinstance(df, bz.expr.expressions.Projection):
         odo.odo(df, outpath)
     else:
         num_names = list(df.select_dtypes(include=numerics).columns)
@@ -118,53 +118,87 @@ def arrivals_per_variety_over_time(d, outdir):
 ### necessary?
 """
 
-def arrival_over_time(d, outdir):
-    d = bz.by(bz.merge(d.year, d.month), arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'tonnage_by_year_month.csv')
-    save(d, outpath)
-    return d
-
-def arrival_by_month(d, outdir):
+def arrival_over_time(d, outdir, level=None):
     df = odo.odo(d, pd.DataFrame)
     d = bz.Data(df)
-    d = bz.by(d.month, arrival=d.arrival.mean())
-    outpath = path.join(outdir, 'tonnage_by_month.csv')
-    save(d, outpath)
-    return
+    if level:
+        if isinstance(level, list):
+            expr = [l for l in level]
+        else:
+            expr = level
+        dr = bz.by(bz.merge(d[expr], d.year, d.month, d.commodity), arrival=d.arrival.sum())
+        outpath = path.join(outdir, 'tonnage_by_{}_year-month.csv'.format(level))
+    else:
+        dr = bz.by(bz.merge(d.year, d.month, d.commodity), arrival=d.arrival.sum())
+        outpath = path.join(outdir, 'tonnage_by_year-month.csv')
+    save(dr, outpath)
+    return dr
 
-def arrival_by_year(d, outdir):
+def arrival_by_month(d, outdir, level=None):
     df = odo.odo(d, pd.DataFrame)
     d = bz.Data(df)
-    d = bz.by(d.year, arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'tonnage_by_year.csv')
-    save(d, outpath)
+    if level:
+        if isinstance(level, list):
+            expr = [l for l in level]
+        else:
+            expr = level
+        do = bz.by(bz.merge(d[expr], d.month, d.commodity), arrival=d.arrival.mean())
+        outpath = path.join(outdir, 'tonnage_by_{}_month.csv'.format(level))
+    else:
+        do = bz.by(bz.merge(d.month, d.commodity), arrival=d.arrival.mean())
+        outpath = path.join(outdir, 'tonnage_by_month.csv')
+    save(do, outpath)
     return
+
+def arrival_by_year(d, outdir, level=None):
+    df = odo.odo(d, pd.DataFrame)
+    d = bz.Data(df)
+    do = bz.by(bz.merge(d.year, d.commodity), arrival=d.arrival.sum())
+    if level:
+        if isinstance(level, list):
+            expr = [l for l in level]
+        else:
+            expr = level
+        do = bz.by(bz.merge(d[expr], d.year, d.commodity), arrival=d.arrival.sum())
+        outpath = path.join(outdir, 'tonnage_by_{}_year.csv'.format(level))
+    else:
+        do = bz.by(bz.merge(d.year, d.commodity), arrival=d.arrival.sum())
+        outpath = path.join(outdir, 'tonnage_by_year.csv')
+    save(do, outpath)
+    return
+
+def arrival_by_level(d, outdir, level):
+    dr = bz.by(bz.merge(d[level], d.commodity, d.year, d.month), arrival=d.arrival.sum())
+    outpath = path.join(outdir, 'tonnage_by_{}.csv'.format(level))
+    do = bz.by(bz.merge(d[level], d.commodity), arrival=d.arrival.sum())
+    #d[[level, 'commodity']]
+    save(do, outpath)
+    by_year_month = arrival_over_time(dr, outdir, level)
+    arrival_by_year(dr, outdir, level)
+    arrival_by_month(by_year_month, outdir, level)
+    return 
 
 ### need additional group by and sum after appending has produced figures for all markets
 def arrival_by_market(d, outdir):
-    do = bz.by(d.market, arrival=d.arrival.sum())
+    do = bz.by(bz.merge(d.market, d.commodity), arrival=d.arrival.sum())
     outpath = path.join(outdir, 'tonnage_by_market.csv')
     save(do, outpath)
-    do = bz.by(bz.merge(d.market, d.commodity), arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'commodity_tonnage_by_market.csv')
-    save(do, outpath)
+    """
+    by_year_month = arrival_over_time(do, outdir)
+    arrival_by_time_unit(do, outdir, 'year')
+    arrival_by_time_unit(by_year_month, outdir, 'month')
+    """
     return
 
 def arrival_by_district(d, outdir):
-    do = bz.by(d.district, arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'tonnage_by_district.csv')
-    save(do, outpath)
     do = bz.by(bz.merge(d.market, d.commodity), arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'commodity_tonnage_by_district.csv')
+    outpath = path.join(outdir, 'tonnage_by_district.csv')
     save(do, outpath)
     return
 
 def arrival_by_state(d, outdir):
-    do = bz.by(d.state, arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'tonnage_by_state.csv')
-    save(do, outpath)
     do = bz.by(bz.merge(d.market, d.state), arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'commodity_tonnage_by_state.csv')
+    outpath = path.join(outdir, 'tonnage_by_state.csv')
     save(do, outpath)
     return
 
@@ -218,24 +252,27 @@ def get_coverage(df, date_range, outdir, group_cols = []):
     save(res_df, outpath)
     return
 
-def get_loc_coverage(df, subset_cols, group_cols, date_range, outdir, size_col=None):
+def get_loc_coverage(df, subset_cols, date_group_cols, group_cols, date_range, outdir, size_col=None):
     distinct_df = df.drop_duplicates(subset=subset_cols)
-    grouped = distinct_df.groupby(group_cols)
+    grouped = distinct_df.groupby(date_group_cols + group_cols)
     res1 = grouped.apply(lambda x: get_group_coverage(x, date_range)) #aggregate(lambda col: get_coverage(x, date_range)).date)
     if size_col:
         size_df = df.drop_duplicates(subset=['date', size_col])
-        grouped = size_df.groupby(group_cols)
+        grouped = size_df.groupby(date_group_cols + group_cols)
         res2 = pd.DataFrame(grouped.size(), columns=['records']) # same as df['market'].value_counts()?
     else:
         res2 = pd.DataFrame(grouped.size(), columns=['records'])
-    merged_df = res1.merge(res2, left_index=True, right_index=True)
-    merged_df.reset_index(inplace=True)
+    res1.reset_index(inplace=True)
+    res2.reset_index(inplace=True)
+    merged_df = pd.merge(res1, res2, how="outer", on=date_group_cols + group_cols)
+    #merged_df = res1.merge(res2, left_index=True, right_index=True)
+    #merged_df.reset_index(inplace=True)
     commodity = df['commodity'].unique()[0]
     merged_df.insert(0, 'commodity', commodity)
     ### now set reset_index and add commodity column
-    outpath = path.join(outdir, 'coverage_by_{}.csv'.format('-'.join(group_cols)))
+    outpath = path.join(outdir, 'coverage_by_{}.csv'.format('-'.join(date_group_cols + [group_cols[-1]])))
     save(merged_df, outpath)
-    if len(group_cols) > 2:
+    if len(date_group_cols + group_cols) > 2:
         return merged_df 
     else:
         return
@@ -263,17 +300,17 @@ def get_coverages(df, date_range, outdir, commodity):
     ### NOTE: use one record per date per market
     ### columns on which to drop duplicates for distinct date entries per market:
     market_cols = ['date', 'market']
-    get_loc_coverage(df, market_cols, ['market'], date_range, outdir)
-    get_loc_coverage(df, ['date', 'district'], ['district'], date_range, outdir, 'market')
-    get_loc_coverage(df, ['date', 'state'], ['state'], date_range, outdir, 'market')
+    get_loc_coverage(df, market_cols, [], ['state', 'district', 'market'], date_range, outdir)
+    get_loc_coverage(df, ['date', 'district'], [], ['state', 'district'], date_range, outdir, 'market')
+    get_loc_coverage(df, ['date', 'state'], [], ['state'], date_range, outdir, 'market')
 
-    get_loc_coverage(df, market_cols, ['year', 'market'], None, outdir)
-    get_loc_coverage(df, ['date', 'district'], ['year', 'district'], None, outdir, 'market')
-    get_loc_coverage(df, ['date', 'state'], ['year', 'state'], None, outdir, 'market')
+    get_loc_coverage(df, market_cols, ['year'], ['state', 'district', 'market'], None, outdir)
+    get_loc_coverage(df, ['date', 'district'], ['year'], ['state', 'district'], None, outdir, 'market')
+    get_loc_coverage(df, ['date', 'state'], ['year'], ['state'], None, outdir, 'market')
 
-    ym_market = get_loc_coverage(df, market_cols, ['year', 'month', 'market'], None, outdir)
-    ym_district = get_loc_coverage(df, ['date', 'district'], ['year', 'month', 'district'], None, outdir, 'market')
-    ym_state = get_loc_coverage(df, ['date', 'state'], ['year', 'month', 'state'], None, outdir, 'market')
+    ym_market = get_loc_coverage(df, market_cols, ['year', 'month'], ['state', 'district', 'market'], None, outdir)
+    ym_district = get_loc_coverage(df, ['date', 'district'], ['year', 'month'], ['state', 'district'], None, outdir, 'market')
+    ym_state = get_loc_coverage(df, ['date', 'state'], ['year', 'month'], ['state'], None, outdir, 'market')
     # on date X 7 distinct arrival entries, 12 distinct price entries for a commodity
     #(comm_cover, year_comm_cover, year_month_comm_cover), (year_market_cover, year_district_cover, year_state_cover)
 
@@ -319,12 +356,20 @@ def compute_stats(data_dir, filename):
     ### NOTE: taking into account that arrivals I have not taken into account that arrivals are repeated
     arrivals = d[['date', 'state', 'district', 'market', 'commodity', 'arrival', 'year', 'month']].distinct()
     arrival_by_year_month = arrival_over_time(arrivals, outdir)
+    arrival_by_year(arrivals, outdir)
+    arrival_by_month(arrival_by_year_month, outdir)
+
+    arrival_by_level(arrivals, outdir, ['state', 'district', 'market'])
+    arrival_by_level(arrivals, outdir, ['state', 'district'])
+    arrival_by_level(arrivals, outdir, 'state')
+    """
     arrival_by_month(arrival_by_year_month, outdir)
     arrival_by_year(arrivals, outdir)
     # arrival by state,( district,) market
     arrival_by_market(arrivals, outdir) 
     arrival_by_district(arrivals, outdir) 
     arrival_by_state(arrivals, outdir) 
+    """
 
     get_coverages(df, date_range, outdir, commodity) 
     ### TODO:
@@ -400,7 +445,10 @@ def combine_commodity_stats(data_dir):
             ### TODO: check to see if this works
             if 'variety' in filename:
                 continue
-            outpath = path.join(all_dir, filename)
+            outdir = path.join(all_dir, 'stacked')
+            if not path.isdir(outdir):
+                os.makedirs(outdir)
+            outpath = path.join(outdir, filename)
             os.system('/bin/bash -c \"cat {0} >> {1}\"'.format(filename, outpath))
     # delete *all.csv files
     # for every category, commodity read files

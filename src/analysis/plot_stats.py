@@ -1,11 +1,11 @@
 import os
 from os import path
-import glob.glob
+import glob
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
-from mpl.backends.backend_pdf import PdfPages
-import mpl.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
 import seaborn as sns
 
 def chunks(l, n):
@@ -14,16 +14,30 @@ def chunks(l, n):
         yield l[i:i+n]
 
 ### TODO: add column to be plotted on y axis?
-def page_barplots(chunk, pdf):
-    fig, axes = plt.subplots(nrows=3, ncols=2)
-    fig.title()
+def page_barplots(title, page_id, chunk, pdf):
+    chunk_len = len(chunk)
+    fig, axes = plt.subplots(nrows=3, ncols=2, dpi=100)
+    sns.despine(fig)
+    fig.set_size_inches([8.27,11.69])
+    ### TODO: put info in subplot title!!!
+    #fig.suptitle(title + ', page '+str(page_id))
     # use commodity, "arrival" as figure title
-    plot_tuples = zip(chunk, axes.flat) 
+    axes = np.array(axes.flat)
+    plot_tuples = zip(chunk, axes[0:chunk_len]) 
     for (idx, group), ax in plot_tuples:
-        print(idx)
-        # use year as subplot title
-        sns.barplot(x="month", y="arrival", data=group)
-        pdf.savefig()
+        sns.barplot(x="month", y="arrival", data=group, ax=ax)
+        # using year as subplot title
+        ax.set_title(idx)
+        #ax.xaxis.set_major_locator(months)
+        #ax.xaxis.set_major_formatter(monthsFmt)
+        #ax.xaxis.set_minor_locator(mondays)
+
+    ### remove unused axes
+    for ax in axes[chunk_len:]: 
+        ax.axis('off')
+    fig.tight_layout()
+
+    pdf.savefig()
 
     # save to pdf with custom save function
     return
@@ -32,14 +46,18 @@ def longitudinal_plots(filename, ext='pdf'):
     #df['date'] = df.apply(lambda row: str(int(row['year'])) + '-' + str(int(row['month'])), axis=1)
     df = pd.DataFrame.from_csv(filename, index_col = None)
     grouped = df.groupby('year')
-    plot_chunks = chunks(grouped, 6)
+    plot_chunks = chunks(list(grouped), 6)
+    print(plot_chunks)
     ### TODO: decide on savepath
     fig_name = filename.replace('csv', ext)
-
-    with PdfPages(fig_name) as pdf:
-        for chunk in plot_chunks:
-            page_barplots(chunk, pdf)
-
+    title = ' '.join(filename.strip('.csv').split('_'))
+    page_id = 1
+    # need group by for those files that contain level
+    with sns.axes_style('ticks'):
+        with PdfPages(fig_name) as pdf:
+            for chunk in plot_chunks:
+                page_barplots(title, page_id, chunk, pdf)
+                page_id+=1
     return
 
 """ 
@@ -71,12 +89,18 @@ def main():
     os.chdir(stats_dir)
 
     ### longitudinal plots
-    files = glob.glob('year-month.csv')
+    files = glob.glob('*year-month.csv')
     for filename in files:
+        ### need to differentiate between level plots, commodity (level) plots and total aggregate plots
+        ### detect by columns?
+        levels = ['state', 'district', 'market']
         longitudinal_plots(filename)
 
 
     return
+
+if __name__ == "__main__":
+    main()
 
 ### for different commodities: plot coverage by year, month
 ### for different commodities: plot coverage by state, district, market
