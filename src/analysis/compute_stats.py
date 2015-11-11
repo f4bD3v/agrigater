@@ -1,5 +1,6 @@
 import os
 from os import path
+import sys
 import glob
 import blaze as bz
 import pandas as pd
@@ -10,6 +11,7 @@ import time
 import shutil
 from datetime import datetime, date
 import calendar
+import ast
 
 ### Merging: pd.merge(index_frame, df, how='outer', on=['year', 'month', 'district'])
 ### NOTE: this representation may be useful at some point
@@ -18,16 +20,21 @@ class DataFrameObj:
         self.df = df
         self.name = name
 
-def save(df, outpath):
-    numerics = ['float16', 'float32', 'float64']
-    if os.path.isfile(outpath):
-        os.remove(outpath)
-    if isinstance(df, bz.expr.split_apply_combine.By) or isinstance(df, bz.expr.expressions.Projection):
-        odo.odo(df, outpath)
-    else:
-        num_names = list(df.select_dtypes(include=numerics).columns)
-        df = df.apply(lambda x: np.round(x, decimals=3) if x.name in num_names else x)
-        odo.odo(df, outpath)
+replace = True        
+
+def save(df, outpath, replace):
+    print('Writing to {}'.format(outpath.split('/')[-1]), replace)
+    if replace:
+        numerics = ['float16', 'float32', 'float64']
+        if os.path.isfile(outpath):
+            os.remove(outpath)
+        if isinstance(df, bz.expr.split_apply_combine.By) or isinstance(df, bz.expr.expressions.Projection):
+            odo.odo(df, outpath)
+        else:
+            num_names = list(df.select_dtypes(include=numerics).columns)
+            df = df.apply(lambda x: np.round(x, decimals=3) if x.name in num_names else x)
+            odo.odo(df, outpath)
+    return
 
 def fill_records(df, date_range):
     date_df = pd.DataFrame(date_range, columns=['date'])
@@ -58,18 +65,19 @@ def bz_compute_na_ratio(d, column):
     return ratio
 
 def nas_by_commodity(d, commodity, outdir):
-    arrival_nas = bz_compute_na_ratio(d, 'arrival')
-    ## save these figures to a spreadsheet from I can easily generate graphs!!!
-    ## commodity, na_percentage_type, na_percentage
-    ## or better: commodity | arrival | price
-    #                rice    |  30.5%  | 20%
-    modal_price_nas = bz_compute_na_ratio(d, 'modal')
-    min_price_nas = bz_compute_na_ratio(d, 'min')
-    max_price_nas = bz_compute_na_ratio(d, 'max')
-
-    row = pd.DataFrame([[commodity, arrival_nas, modal_price_nas, min_price_nas, max_price_nas]], columns=['commodity', 'arrival', 'modal price', 'min price', 'max price'])
     outpath = path.join(outdir, 'nas_by_commodity.csv')
-    row.to_csv(outpath, index=False)
+    if replace or not path.isfile(outpath):
+        arrival_nas = bz_compute_na_ratio(d, 'arrival')
+        ## save these figures to a spreadsheet from I can easily generate graphs!!!
+        ## commodity, na_percentage_type, na_percentage
+        ## or better: commodity | arrival | price
+        #                rice    |  30.5%  | 20%
+        modal_price_nas = bz_compute_na_ratio(d, 'modal')
+        min_price_nas = bz_compute_na_ratio(d, 'min')
+        max_price_nas = bz_compute_na_ratio(d, 'max')
+
+        row = pd.DataFrame([[commodity, arrival_nas, modal_price_nas, min_price_nas, max_price_nas]], columns=['commodity', 'arrival', 'modal price', 'min price', 'max price'])
+        row.to_csv(outpath, index=False)
     return
 
 def nas_by_group(series):
@@ -85,35 +93,36 @@ def get_group_len(series):
 
 # discard varieties to have distinct arrival values
 def nas_over_time(df, commodity, outdir):
-    price_df = df.groupby(['year', 'month']).agg({'min' : {'na_ratio': nas_by_group, 'len': get_group_len}, 'max' : {'na_ratio': nas_by_group, 'len': get_group_len}, 'modal' : {'na_ratio': nas_by_group, 'len': get_group_len}})
-    price_df = pd.DataFrame(price_df)
-    # Distinct arrivals: do not need to subset on commodity field, since all entries are identical
-    df = df.drop_duplicates(subset=['date', 'market'])
-    arrival_df = df.groupby(['year', 'month']).agg({'arrival': {'na_ratio': nas_by_group, 'len': get_group_len}})
-    arrival_df = pd.DataFrame(arrival_df)
-    # Merge stat dfs on year, month index
-    commodity_df = arrival_df.merge(price_df, left_index=True, right_index=True)
-    commodity_df.insert(0, 'commodity', commodity)
     outpath = path.join(outdir, 'nas_by_year-month.csv')
-    #cidx_df = df['year', 'month', 'commodity']
-    ### NOTE: inserting NA rows 
-    # out_df = pd.merge(idx_df, commodity_df, how='outer', on=['year', 'month', 'commodity'])
-    commodity_df.to_csv(outpath)#, index=False)
+    if replace or not path.isfile(outpath):
+        price_df = df.groupby(['year', 'month']).agg({'min' : {'na_ratio': nas_by_group, 'len': get_group_len}, 'max' : {'na_ratio': nas_by_group, 'len': get_group_len}, 'modal' : {'na_ratio': nas_by_group, 'len': get_group_len}})
+        price_df = pd.DataFrame(price_df)
+        # Distinct arrivals: do not need to subset on commodity field, since all entries are identical
+        df = df.drop_duplicates(subset=['date', 'market'])
+        arrival_df = df.groupby(['year', 'month']).agg({'arrival': {'na_ratio': nas_by_group, 'len': get_group_len}})
+        arrival_df = pd.DataFrame(arrival_df)
+        # Merge stat dfs on year, month index
+        commodity_df = arrival_df.merge(price_df, left_index=True, right_index=True)
+        commodity_df.insert(0, 'commodity', commodity)
+        #cidx_df = df['year', 'month', 'commodity']
+        ### NOTE: inserting NA rows 
+        # out_df = pd.merge(idx_df, commodity_df, how='outer', on=['year', 'month', 'commodity'])
+        commodity_df.to_csv(outpath)#, index=False)
     return
 
 """
-    - may be computed after estimation completed
+- may be computed after estimation completed
 def arrivals_per_variety(d, outdir):
     d = bz.by(d.variety, arrival=d.arrival.sum())
     outpath = path.join(outdir, 'arrivals_per_variety.csv')
-    save(d, outpath)
+    save(d, outpath, replace)
     return
 
 def arrivals_per_variety_over_time(d, outdir):
     d = bz.by(bz.merge(d.year, d.month, d.variety), arrival=d.arrival.sum())
     ### TODO: fill year, month gaps for plotting
     outpath = path.join(outdir, 'arrivals_per_variety_over_time.csv')
-    save(d, outpath)
+    save(d, outpath, replace)
     return
 ### necessary?
 """
@@ -121,17 +130,22 @@ def arrivals_per_variety_over_time(d, outdir):
 def arrival_over_time(d, outdir, level=None):
     df = odo.odo(d, pd.DataFrame)
     d = bz.Data(df)
+    dr = None
     if level:
         if isinstance(level, list):
             expr = [l for l in level]
         else:
             expr = level
-        dr = bz.by(bz.merge(d[expr], d.year, d.month, d.commodity), arrival=d.arrival.sum())
-        outpath = path.join(outdir, 'tonnage_by_{}_year-month.csv'.format(level))
+        name = '-'.join(level)
+        outpath = path.join(outdir, 'tonnage_by_{}_year-month.csv'.format(name))
+        if replace or not path.isfile(outpath):
+            dr = bz.by(bz.merge(d[expr], d.year, d.month, d.commodity), arrival=d.arrival.sum())
+            save(dr, outpath, replace)
     else:
-        dr = bz.by(bz.merge(d.year, d.month, d.commodity), arrival=d.arrival.sum())
         outpath = path.join(outdir, 'tonnage_by_year-month.csv')
-    save(dr, outpath)
+        if replace or not path.isfile(outpath):
+            dr = bz.by(bz.merge(d.year, d.month, d.commodity), arrival=d.arrival.sum())
+            save(dr, outpath, replace)
     return dr
 
 def arrival_by_month(d, outdir, level=None):
@@ -142,47 +156,57 @@ def arrival_by_month(d, outdir, level=None):
             expr = [l for l in level]
         else:
             expr = level
-        do = bz.by(bz.merge(d[expr], d.month, d.commodity), arrival=d.arrival.mean())
-        outpath = path.join(outdir, 'tonnage_by_{}_month.csv'.format(level))
+        name = '-'.join(level)
+        outpath = path.join(outdir, 'tonnage_by_{}_month.csv'.format(name))
+        if replace or not path.isfile(outpath):
+            do = bz.by(bz.merge(d[expr], d.month, d.commodity), arrival=d.arrival.mean())
+            save(do, outpath, replace)
     else:
-        do = bz.by(bz.merge(d.month, d.commodity), arrival=d.arrival.mean())
         outpath = path.join(outdir, 'tonnage_by_month.csv')
-    save(do, outpath)
+        if replace or not path.isfile(outpath):
+            do = bz.by(bz.merge(d.month, d.commodity), arrival=d.arrival.mean())
+            save(do, outpath, replace)
     return
 
 def arrival_by_year(d, outdir, level=None):
     df = odo.odo(d, pd.DataFrame)
     d = bz.Data(df)
-    do = bz.by(bz.merge(d.year, d.commodity), arrival=d.arrival.sum())
     if level:
         if isinstance(level, list):
             expr = [l for l in level]
         else:
             expr = level
-        do = bz.by(bz.merge(d[expr], d.year, d.commodity), arrival=d.arrival.sum())
-        outpath = path.join(outdir, 'tonnage_by_{}_year.csv'.format(level))
+        name = '-'.join(level)
+        outpath = path.join(outdir, 'tonnage_by_{}_year.csv'.format(name))
+        if replace or not path.isfile(outpath):
+            do = bz.by(bz.merge(d[expr], d.year, d.commodity), arrival=d.arrival.sum())
+            save(do, outpath, replace)
     else:
-        do = bz.by(bz.merge(d.year, d.commodity), arrival=d.arrival.sum())
         outpath = path.join(outdir, 'tonnage_by_year.csv')
-    save(do, outpath)
+        if replace or not path.isfile(outpath):
+            do = bz.by(bz.merge(d.year, d.commodity), arrival=d.arrival.sum())
+            save(do, outpath, replace)
     return
 
 def arrival_by_level(d, outdir, level):
-    dr = bz.by(bz.merge(d[level], d.commodity, d.year, d.month), arrival=d.arrival.sum())
-    outpath = path.join(outdir, 'tonnage_by_{}.csv'.format(level))
-    do = bz.by(bz.merge(d[level], d.commodity), arrival=d.arrival.sum())
-    #d[[level, 'commodity']]
-    save(do, outpath)
-    by_year_month = arrival_over_time(dr, outdir, level)
-    arrival_by_year(dr, outdir, level)
-    arrival_by_month(by_year_month, outdir, level)
+    name = '-'.join(level)
+    outpath = path.join(outdir, 'tonnage_by_{}.csv'.format(name))
+    if replace or not path.isfile(outpath):
+        dr = bz.by(bz.merge(d[level], d.commodity, d.year, d.month), arrival=d.arrival.sum())
+        do = bz.by(bz.merge(d[level], d.commodity), arrival=d.arrival.sum())
+        #d[[level, 'commodity']]
+        save(do, outpath, replace)
+        by_year_month = arrival_over_time(dr, outdir, level)
+        arrival_by_year(dr, outdir, level)
+        arrival_by_month(by_year_month, outdir, level)
     return 
 
 ### need additional group by and sum after appending has produced figures for all markets
 def arrival_by_market(d, outdir):
-    do = bz.by(bz.merge(d.market, d.commodity), arrival=d.arrival.sum())
     outpath = path.join(outdir, 'tonnage_by_market.csv')
-    save(do, outpath)
+    if replace or not path.isfile(outpath):
+        do = bz.by(bz.merge(d.market, d.commodity), arrival=d.arrival.sum())
+        save(do, outpath, replace)
     """
     by_year_month = arrival_over_time(do, outdir)
     arrival_by_time_unit(do, outdir, 'year')
@@ -191,15 +215,17 @@ def arrival_by_market(d, outdir):
     return
 
 def arrival_by_district(d, outdir):
-    do = bz.by(bz.merge(d.market, d.commodity), arrival=d.arrival.sum())
     outpath = path.join(outdir, 'tonnage_by_district.csv')
-    save(do, outpath)
+    if replace or not path.isfile(outpath):
+        do = bz.by(bz.merge(d.market, d.commodity), arrival=d.arrival.sum())
+        save(do, outpath, replace)
     return
 
 def arrival_by_state(d, outdir):
-    do = bz.by(bz.merge(d.market, d.state), arrival=d.arrival.sum())
     outpath = path.join(outdir, 'tonnage_by_state.csv')
-    save(do, outpath)
+    if replace or not path.isfile(outpath):
+        do = bz.by(bz.merge(d.market, d.state), arrival=d.arrival.sum())
+        save(do, outpath, replace)
     return
 
 # data coverage global by commodity
@@ -234,56 +260,60 @@ def get_group_coverage(df, date_range=False, loc=True):
     return coverage
 
 def get_coverage(df, date_range, outdir, group_cols = []):
-    res_df = None
-    if group_cols:
-        grouped = df.groupby(group_cols)
-        res_df = grouped.apply(lambda x: get_group_coverage(x, date_range, False))
-    else:
-        dates = df['date'].unique()
-        commodity_cover = len(dates)/len(date_range)
-        res_df = pd.DataFrame([[commodity_cover]], columns=['coverage'])
-        group_cols = ['commodity']
+    name = '-'.join(group_cols)
+    outpath = path.join(outdir, 'coverage_by_{}.csv'.format(name))
+    if replace or not path.isfile(outpath):
+        res_df = None
+        if group_cols:
+            grouped = df.groupby(group_cols)
+            res_df = grouped.apply(lambda x: get_group_coverage(x, date_range, False))
+        else:
+            dates = df['date'].unique()
+            commodity_cover = len(dates)/len(date_range)
+            res_df = pd.DataFrame([[commodity_cover]], columns=['coverage'])
+            group_cols = ['commodity']
 
-    if res_df.index.name:
-        res_df.reset_index(inplace=True)
-    commodity = df['commodity'].unique()[0]
-    res_df.insert(0, 'commodity', commodity)
-    outpath = path.join(outdir, 'coverage_by_{}.csv'.format('-'.join(group_cols)))
-    save(res_df, outpath)
+        if res_df.index.name:
+            res_df.reset_index(inplace=True)
+        commodity = df['commodity'].unique()[0]
+        res_df.insert(0, 'commodity', commodity)
+        save(res_df, outpath, replace)
     return
 
 def get_loc_coverage(df, subset_cols, date_group_cols, group_cols, date_range, outdir, size_col=None):
-    distinct_df = df.drop_duplicates(subset=subset_cols)
-    grouped = distinct_df.groupby(date_group_cols + group_cols)
-    res1 = grouped.apply(lambda x: get_group_coverage(x, date_range)) #aggregate(lambda col: get_coverage(x, date_range)).date)
-    if size_col:
-        size_df = df.drop_duplicates(subset=['date', size_col])
-        grouped = size_df.groupby(date_group_cols + group_cols)
-        res2 = pd.DataFrame(grouped.size(), columns=['records']) # same as df['market'].value_counts()?
-    else:
-        res2 = pd.DataFrame(grouped.size(), columns=['records'])
-    res1.reset_index(inplace=True)
-    res2.reset_index(inplace=True)
-    merged_df = pd.merge(res1, res2, how="outer", on=date_group_cols + group_cols)
-    #merged_df = res1.merge(res2, left_index=True, right_index=True)
-    #merged_df.reset_index(inplace=True)
-    commodity = df['commodity'].unique()[0]
-    merged_df.insert(0, 'commodity', commodity)
-    ### now set reset_index and add commodity column
-    outpath = path.join(outdir, 'coverage_by_{}.csv'.format('-'.join(date_group_cols + [group_cols[-1]])))
-    save(merged_df, outpath)
-    if len(date_group_cols + group_cols) > 2:
-        return merged_df 
-    else:
-        return
+    name = '-'.join(date_group_cols + [group_cols[-1]])
+    outpath = path.join(outdir, 'coverage_by_{}.csv'.format(name))
+    if replace or not path.isfile(outpath): 
+        distinct_df = df.drop_duplicates(subset=subset_cols)
+        grouped = distinct_df.groupby(date_group_cols + group_cols)
+        res1 = grouped.apply(lambda x: get_group_coverage(x, date_range)) #aggregate(lambda col: get_coverage(x, date_range)).date)
+        if size_col:
+            size_df = df.drop_duplicates(subset=['date', size_col])
+            grouped = size_df.groupby(date_group_cols + group_cols)
+            res2 = pd.DataFrame(grouped.size(), columns=['records']) # same as df['market'].value_counts()?
+        else:
+            res2 = pd.DataFrame(grouped.size(), columns=['records'])
+        res1.reset_index(inplace=True)
+        res2.reset_index(inplace=True)
+        merged_df = pd.merge(res1, res2, how="outer", on=date_group_cols + group_cols)
+        #merged_df = res1.merge(res2, left_index=True, right_index=True)
+        #merged_df.reset_index(inplace=True)
+        commodity = df['commodity'].unique()[0]
+        merged_df.insert(0, 'commodity', commodity)
+        ### now set reset_index and add commodity column
+        save(merged_df, outpath, replace)
+        if len(date_group_cols + group_cols) > 2:
+            return merged_df 
+    return
 
 def mean_by_month(df, outdir, level):
-    ### TODO: include year range
-    df.drop('year', axis=1, inplace=True)
-    df = df.groupby('month').mean()
-    df.reset_index(inplace=True)
     outpath = path.join(outdir, 'coverage_by_{}-month.csv'.format(level))
-    save(df, outpath)
+    if replace or not path.isfile(outpath):
+        ### TODO: include year range
+        df.drop('year', axis=1, inplace=True)
+        df = df.groupby('month').mean()
+        df.reset_index(inplace=True)
+        save(df, outpath, replace)
     return
 
 def get_coverages(df, date_range, outdir, commodity):
@@ -357,11 +387,12 @@ def compute_stats(data_dir, filename):
     arrivals = d[['date', 'state', 'district', 'market', 'commodity', 'arrival', 'year', 'month']].distinct()
     arrival_by_year_month = arrival_over_time(arrivals, outdir)
     arrival_by_year(arrivals, outdir)
-    arrival_by_month(arrival_by_year_month, outdir)
+    if arrival_by_year_month:
+        arrival_by_month(arrival_by_year_month, outdir)
 
     arrival_by_level(arrivals, outdir, ['state', 'district', 'market'])
     arrival_by_level(arrivals, outdir, ['state', 'district'])
-    arrival_by_level(arrivals, outdir, 'state')
+    arrival_by_level(arrivals, outdir, ['state'])
     """
     arrival_by_month(arrival_by_year_month, outdir)
     arrival_by_year(arrivals, outdir)
@@ -416,10 +447,11 @@ def compute_stats(data_dir, filename):
 
 ### TODO: how to aggregate coverage?
 def arrival_aggregation(data_dir):
-    all_dir = path.join(data_dir, 'stats', 'all')
+    all_dir = path.join(data_dir, 'stats', 'all', 'stacked')
     os.chdir(all_dir)
     files = glob.glob('*.csv')
-    files = filter(lambda x: 'tonnage' in x and not 'commodity' in x, files) 
+    ### HOW TO aggregate coverage?
+    files = filter(lambda x: 'tonnage' in x, files) 
     ### -
     for filename in files:
         group_col = filename.rstrip('.csv').split('_')[-1]
@@ -435,13 +467,12 @@ def combine_commodity_stats(data_dir):
         shutil.rmtree(all_dir)
     os.makedirs(all_dir)
     for folder in folders:
-        if os.path.isfile(folder):
+        if path.isfile(folder):
             continue
         folder_dir = path.join(outdir, folder)
         os.chdir(folder_dir)
         files = glob.glob('*.csv')
         for filename in files:
-            print(filename)
             ### TODO: check to see if this works
             if 'variety' in filename:
                 continue
@@ -449,13 +480,15 @@ def combine_commodity_stats(data_dir):
             if not path.isdir(outdir):
                 os.makedirs(outdir)
             outpath = path.join(outdir, filename)
-            os.system('/bin/bash -c \"cat {0} >> {1}\"'.format(filename, outpath))
+            os.system('/bin/bash -c \"cat {0} >> {1}\"'.format(filename, outpath, replace))
     # delete *all.csv files
     # for every category, commodity read files
     # and execute bash append command
     return
 
-def main():
+def main(overwrite=True):
+    global replace
+    replace=ast.literal_eval(overwrite)
     data_dir = '../../data'
     os.chdir(data_dir)
     data_dir = os.getcwd()
@@ -469,6 +502,9 @@ def main():
     ### TODO: make this one function call?
     #combine_commodity_stats(data_dir)
     for folder in folders:
+        if path.isfile(folder):
+            continue
+        print('Switching to category {}'.format(folder))
         os.chdir(path.join(folder, 'integrated'))
         files = glob.glob('*.csv')
         for filename in files:
@@ -483,4 +519,7 @@ def main():
     return
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1:
+        main(*sys.argv[1:])
+    else:
+        print('usage: {} [replace=True|False]'.format(sys.argv[0]))
