@@ -259,7 +259,7 @@ def get_group_coverage(df, date_range=False, loc=True):
     coverage = pd.Series({'coverage' : coverage}) # index=[df[group_col].unique()[0]])
     return coverage
 
-def get_coverage(df, date_range, outdir, group_cols = []):
+def get_coverage(df, date_range, outdir, group_cols = ['commodity']):
     name = '-'.join(group_cols)
     outpath = path.join(outdir, 'coverage_by_{}.csv'.format(name))
     if replace or not path.isfile(outpath):
