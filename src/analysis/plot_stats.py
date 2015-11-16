@@ -70,6 +70,9 @@ http://stackoverflow.com/questions/26540035/rotate-label-text-in-seaborn-factorp
 http://stackoverflow.com/questions/22795348/plotting-time-series-data-with-seaborn/22798911#22798911
 
 """
+# # #
+# # #
+
 
 def custom_bar_plot():
     return
@@ -102,6 +105,11 @@ def main():
 if __name__ == "__main__":
     main()
 
+# {year} => one plot
+# {month} => one plot
+# {commodity, year} => commodity plots for all years
+# {commodity, month} => 
+# {commodity, level, {month, year}} => longitudinal plot
 ### for different commodities: plot coverage by year, month
 ### for different commodities: plot coverage by state, district, market
 ### for different commodities: plot coverage avg by month (state, district month)

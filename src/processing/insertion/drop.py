@@ -4,8 +4,11 @@
 	--> simpler just to drop collection
 """
 
+### THIS SCRIPT IS FOR AUTOMATION, FOR QUICK PROBLEM FIXING USE DROP.JS
 def drop_commodities(db, logger):
-	cat_comm = json.load(open('comm_by_category.json', 'r'))
+    ### TODO: load selected commodities here and prepend commodities tag
+    cat_comm = json.load(open(path.join(data_dir, 'commodities', 'selected_commodities.json'))) 
+    ### TODO: what to drop among the following? 'commodity_'comm'_variety, 'commodity_'comm, or 'commodity_state'_comm, 'commodity_district'_comm
 	cats = cat_comm.keys()
 	for cat in cats:
 		db[cat].drop()

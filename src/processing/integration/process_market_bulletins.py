@@ -13,6 +13,7 @@ from datetime import datetime
 data_dir = '../../../data'
 
 commodity_corrections = {
+    'Pine Apple' : 'Pineapple',
     'Soanf' : 'Saunf',
     'Amaranthus' : 'Amaranth',
     'Lilly' : 'Lily',
@@ -43,11 +44,20 @@ commodity_corrections = {
     'Paddy(Dhan)' : 'Paddy',
     'Bajra(Pearl Millet)' : 'Pearl Millet',
     'Barley (Jau)' : 'Barley',
-    'Ragi (Finger Millet)' : 'Finger Millet'
+    'Ragi (Finger Millet)' : 'Finger Millet',
+    'Green Chilly' : 'Green Chilli',
+    'Bhindi(Ladies Finger)' : 'Ladies Fingers'
 }
 
 # if name in parentheses contained in main name, remove parentheses with contents
+### TODO: seems like the mapping does not work
 commodity_name_mapping = {
+    'Jack Fruit' : 'Jackfruit',
+    'Mousambi' : 'Sweet Lemon',
+    'Isabgul (Psyllium)' : 'Psyllium',
+    'Sesamum(Sesame,Gingelly,Til)' : 'Sesame',
+    'Gingelly Oil' : 'Sesame Oil',
+    'Arecanut(Betelnut/Supari)' : 'Areca Nut',
     'Soanf' : 'Fennel',
     'Brinjal' : 'Eggplant',
     'Torchwood' : 'Sea Torchwood', #, 'Sea Amyris',
@@ -74,6 +84,7 @@ commodity_name_mapping = {
     'Toria' : 'Canola', # unclear
     'Raya' : 'Indian Mustard',
     'Suran' : 'Elephant Foot Yam', # Stink Lily
+    # Elephant Yam (Suran)
     'Kakada' : 'Indian Jasmine',
     'Antawala' : 'Soapnut',# ???
     'Kacholam' : 'Aromatic Ginger',
@@ -93,10 +104,12 @@ commodity_name_mapping = {
     'Chikoos(Sapota)' : 'Sapodilla',
     'Kanakambara' : 'Firecracker Flower',
     'Bengal Grams(Gram)' : 'Chickpea',
-    'Black Grams' : 'Black Gram',
-    'Arhar (Tur)' :  'Pidgeon Pea',
+    'Black Grams (Urd Beans)' : 'Black Gram',
+    'Arhar (Tur)' : 'Pidgeon Pea',
+    'Red Grams' : 'Pidgeon Pea',
     'Green Grams(Moong)' : 'Mung Bean',
-    'Green Gram(Dal)' : 'Green Dal'
+    'Green Gram(Dal)' : 'Green Dal',
+    'Peas(Dry)' : 'Dried Peas'
 }
 
 ### NOTE: paddy = harvested rice that has not been milled yet (outer layer is removed), grain separated from husk though
@@ -194,7 +207,7 @@ def extract_dicts(folder, files, commodity_dict, category_dict, market_commodity
 ### NOTE:
 # - batch => tested
 # - online => todo
-def clean(files, mode):
+def clean(files, mode, commodity_corrections, commodity_name_mapping):
     if mode == 'batch':
         #commodities = list(set(list(map(lambda x: x.split('_')[0], files))))
         #for commodity in commodities:
@@ -228,7 +241,7 @@ def clean(files, mode):
             ### TODO: merge related filenames
 
             d = bz.transform(d, commodity=d.commodity.map(lambda x: commodity_corrections[x] if x in commodity_corrections else x, 'string'))
-            d = bz.transform(d, commodity_translated=d.commodity.map(lambda x: commodity_name_mapping[x] if x in commodity_name_mapping else x, 'string'))
+            d = bz.transform(d, commodityTranslated=d.commodity.map(lambda x: commodity_name_mapping[x] if x in commodity_name_mapping else x, 'string'))
             d = bz.transform(d, state=d.state.map(lambda x: state_corrections[x] if x in state_corrections else x, 'string'))
             ### TODO: there must be a better solution for this
             #for key, val in market_corrections.items():
@@ -351,6 +364,9 @@ def merge(folder, files, mode, stage='integrated', replace=False):
 def main(task, mode):
     print(task)
     print(mode)
+    comm = json.load(open(path.join(data_dir, 'commodity', 'commodity_corrections_mappings.json'), 'r'))
+    commodity_corrections = comm['commodity_corrections']
+    commodity_name_mapping = comm['commodity_name_mapping']
     src_dir = path.join(data_dir, 'agmarknet/by_date_and_commodity')
     init_dir = os.getcwd()
     os.chdir(src_dir)
@@ -383,7 +399,7 @@ def main(task, mode):
                 #os.chdir('../../by_commodity/{}'.format(folder))
                 files = glob.glob('*stacked.csv')
                 print(files)
-                clean(files, mode)
+                clean(files, mode, commodity_corrections, commodity_name_mapping)
                 os.chdir(curr_dir)
             else:
                 clean(files, mode)  
