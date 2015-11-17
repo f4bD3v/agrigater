@@ -39,8 +39,8 @@ to_insert = {
     'Fibre Crops' : ['Cotton', 'Jute'],
     'Forest Products' : ['Tamarind Fruit', 'Tamarind Seed'],
     'Live Stock, Poulty, Fisheries' : ['Fish', 'Cow', 'Ox', 'She-Buffalo', 'Goat', 'Sheep', 'Cock', 'Hen'],
-    'Pulses' : ['Chickpea', 'Black Gram', 'Pidgeon Pea', 'Mung Bean', 'Dried Pea', 'Green Peas'], 
-    'Vegetables' : ['Potato', 'Onion', 'Tomato', 'Eggplant', 'Cauliflower', 'Green Chilli', 'Cabbage', 'Cucumber', 
+    'Pulses' : ['Chickpea', 'Black Gram', 'Pidgeon Pea', 'Mung Bean', 'Dried Pea', 'Green Peas'],
+    'Vegetables' : ['Potato', 'Onion', 'Tomato', 'Eggplant', 'Cauliflower', 'Green Chilli', 'Cabbage', 'Cucumber',
     'Ladies Fingers', 'Bitter gourd', 'Bottle gourd', 'Pumpkin', 'Carrot', 'Raddish', 'Green ginger', 'Guar', 'Lemon', 'Corinader', 'Capsicum', 'Spinach', 'Beetroot', 'Sweet Potato']
     # and many more: ls -lS | head -20
     # could also select all files with size > threshold
@@ -68,7 +68,7 @@ def insert_commodities(db, config):
         files = glob.glob('*cleaned.csv')
         for filename in files:
             print('Loading {} ..'.format(filename))
-            df = pd.DataFrame.from_csv(filename, index_col = None, header=False)    
+            df = pd.DataFrame.from_csv(filename, index_col = None, header=False)
             ### TODO: assign header
             #df.columns = ['date', 'state', 'market', 'commodity', 'variety', 'weight', 'min', 'max', 'modal']
             print('Adding location ..')
@@ -103,15 +103,15 @@ def insert_commodities_batch(db, config, logger):
             print('Loading {} ..'.format(filename))
             #d = Data(filename)
             #print(bz.compute(d.head()))
-            ### TODO: HOW TO ADD MARKET LOCATIONS USING BLAZE???    
-            df = pd.DataFrame.from_csv(filename, index_col=None)    
+            ### TODO: HOW TO ADD MARKET LOCATIONS USING BLAZE???
+            df = pd.DataFrame.from_csv(filename, index_col=None)
             print('Adding location ..')
             df = create_comm_doc(df, market_locations)
             df['date'] = df['date'].apply(lambda x: x.strftime('%Y-%m-%d'))
             collection = filename.replace('_stacked_cleaned.csv', '') # from commodiy name
             mongo_str = 'mongodb://{0}:{1}/{2}::{3}'.format(config['address'], config['meteorport'], config['meteordb'], collection)
             print('Inserting {} ..'.format(filename))
-            odo.odo(df, mongo_str)  
+            odo.odo(df, mongo_str)
         os.chdir(init_dir)
     end = time.time()
     unit = 'minutes'
@@ -133,7 +133,7 @@ def insert_commodities_batch(db, config, logger):
         prev_commodity = None
         for file in files:
             commodity = file.split('_')[0]
-            df = pd.DataFrame.from_csv(path.join(src_dir, folder, file), index_col = None, header=None) 
+            df = pd.DataFrame.from_csv(path.join(src_dir, folder, file), index_col = None, header=None)
             if prev_commodity != commodity:
                 logger.info(commodity)
             prev_commodity = commodity
@@ -155,7 +155,7 @@ def insert_commodities_batch(db, config, logger):
         else:
             commodity_category_dict[commodity] = category
             category_commodity_dict[category] = category_commodity_dict[category] + [commodity]
-        df = pd.DataFrame.from_csv(path.join(src_dir, folder, file), index_col = None)  
+        df = pd.DataFrame.from_csv(path.join(src_dir, folder, file), index_col = None)
         dfdict = create_comm_doc()
         if dfdict:
             db.insert(folder, dfdict)
@@ -170,25 +170,26 @@ def name_to_fs(name):
     name = re.sub('\s+', ' ', name.strip('"'))
     fs_name = re.sub('\s+', ' ', name.replace(',', ' '))
     fs_name = '-'.join(fs_name.split(' '))
-    return fs_name 
+    return fs_name
 
 ### TODO: by creating an intermediate integrated/ store I have created myself a problem
 # => still differentiate between stacked and online
 def insert_commodities(df, mongo_str, batch=False):
     ### TODO: load this list from commodities/selected_commodities.json
-    selected_commodities = json.load(open(path.join(data_dir, 'commodities', 'selected_commodities.json'))) 
+    selected_commodities = json.load(open(path.join(data_dir, 'commodities', 'selected_commodities.json')))
     to_strip = ''
+    init_dir = os.getcwd()
     if batch:
         agmarknet_dir = path.join(data_dir, 'agmarknet', 'by_commodity')
         to_strip = '_stacked_localized.csv'
-    else:   
+    else:
         agmarknet_dir = path.join(data_dir, 'agmarknet', 'by_date_and_commodity')
         to_strip = '_localized.csv'
-    for cat, comm_list in selected_commodities.items(): 
-        ### TODO: remove, just for testing
-        if cat != 'Cereals':
-            continue
-        cat_folder = name_to_fs(cat)
+    for cat, comm_list in selected_commodities.items():
+        ### NOTE: following is just for testing
+        #if cat != 'Cereals':
+        #    continue
+        cat_folder = name_to_fs(cat).replace('-', '_')
         src_folder = path.join(agmarknet_dir, cat_folder, 'integrated')
         os.chdir(src_folder)
         files = glob.glob('*.csv')
@@ -207,7 +208,7 @@ def insert_commodities(df, mongo_str, batch=False):
             print(filename)
             coll = filename.replace(to_strip, '')
             coll = coll.lower()
-            coll = 'commodity_'+coll+'_varieties'
+            coll = 'market_'+coll+'_varieties'
             print(coll)
             print('Inserting {0} into collection \"{1}\"..'.format(filename, coll))
             target = mongo_str+coll
@@ -217,8 +218,8 @@ def insert_commodities(df, mongo_str, batch=False):
             #nrows = bz.compute(d.count())
             #print('rows', nrows)
             # renaming columns in blaze
-            d = d.relabel(min='minPrice', max='maxPrice', modal='modalPrice', arrival='commodityTonnage', commodity_translated='commodityTranslated')
-            # NOTE: assumption of normal distribution since underlying price discovery process not known: 
+            d = d.relabel(min='minPrice', max='maxPrice', modal='modalPrice')#, arrival='commodityTonnage')#, commodity_translated='commodityTranslated')
+            # NOTE: assumption of normal distribution since underlying price discovery process not known:
             # -> modal price = mean price
             """
             df.rename(columns={'modal': 'minPrice'}, inplace=True)
@@ -226,15 +227,16 @@ def insert_commodities(df, mongo_str, batch=False):
             df.rename(columns={'modal': 'modalPrice'}, inplace=True)
             """
             d = bz.transform(d, varietyTonnage=d.commodityTonnage.map(lambda x: np.nan, 'float64'))
-            odo.odo(d, target)  
+            odo.odo(d, target)
+        os.chdir(init_dir)
     return
 
 ### TODO: fill dates in commodity collections --> in manipulation/
 ### use fill_records function elaborated in compute_stats.py
 def fill_dates():
-    return  
+    return
 
-### TODO: use POs dict (uncleaned taluk) as basis 
+### TODO: use POs dict (uncleaned taluk) as basis
 def insert_states(db):
     docs = json.load(open(path.join(data_dir, 'integrated', 'admin', 'states.json'), 'r'))
     ### insert documents in bulk
