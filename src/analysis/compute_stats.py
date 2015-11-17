@@ -8,6 +8,7 @@ import math
 import odo
 import numpy as np
 import time
+import json
 import shutil
 from datetime import datetime, date
 import calendar
@@ -122,7 +123,11 @@ def get_loc_nas(df, commodity, date_group_cols, group_cols, outdir):
         res_df = df_round(res_df)
         #commodity_df = arrival_df.merge(price_df, left_index=True, right_index=True)
         commodity_df = res_df
+
+        commodity = df['commodity'].unique()[0]
+        category = df['category'].unique()[0]
         commodity_df.insert(0, 'commodity', commodity)
+        commodity_df.insert(0, 'category', category)
         #cidx_df = df['year', 'month', 'commodity']
         ### NOTE: inserting NA rows
         # out_df = pd.merge(idx_df, commodity_df, how='outer', on=['year', 'month', 'commodity'])
@@ -132,7 +137,7 @@ def get_loc_nas(df, commodity, date_group_cols, group_cols, outdir):
 
 # discard varieties to have distinct arrival values
 # date_group_cols = ['year', 'month']
-def nas_over_time(df, commodity, date_group_cols, outdir):
+def nas_over_time(df, commodity, date_group_cols, group_cols, outdir):
     time = '-'.join(date_group_cols)
     outpath = path.join(outdir, 'nas_by_{}.csv'.format(time))
     if replace or not path.exists(outpath):
@@ -152,7 +157,10 @@ def nas_over_time(df, commodity, date_group_cols, outdir):
         res_df = df_round(res_df)
         #commodity_df = arrival_df.merge(price_df, left_index=True, right_index=True)
         commodity_df = res_df
+        commodity = df['commodity'].unique()[0]
+        category = df['category'].unique()[0]
         commodity_df.insert(0, 'commodity', commodity)
+        commodity_df.insert(0, 'category', category)
         #cidx_df = df['year', 'month', 'commodity']
         ### NOTE: inserting NA rows
         # out_df = pd.merge(idx_df, commodity_df, how='outer', on=['year', 'month', 'commodity'])
@@ -333,7 +341,10 @@ def get_coverage(df, date_range, outdir, group_cols = ['commodity']):
         res_df.reset_index(inplace=True)
         commodity = df['commodity'].unique()[0]
         if not 'commodity' in res_df.columns:
+            commodity = df['commodity'].unique()[0]
+            category = df['category'].unique()[0]
             res_df.insert(0, 'commodity', commodity)
+            res_df.insert(0, 'category', category)
         save(res_df, outpath, replace)
     return
 
@@ -363,8 +374,11 @@ def get_loc_coverage(df, subset_cols, date_group_cols, group_cols, date_range, o
         #merged_df = res1.merge(res2, left_index=True, right_index=True)
         #merged_df.reset_index(inplace=True)
         """
+        res.reset_index(inplace=True)
         commodity = df['commodity'].unique()[0]
+        category = df['category'].unique()[0]
         res.insert(0, 'commodity', commodity)
+        res.insert(0, 'category', category)
         ### now set reset_index and add commodity column
         save(res, outpath, replace)
         if len(date_group_cols + group_cols) > 2:
@@ -420,13 +434,13 @@ def get_coverages(df, date_range, outdir, commodity):
 
 ### TODO: compute some basic intro statistics for the analysis part of the thesis here
 # --> more complicated stuff may follow with R?
-def compute_stats(data_dir, filename):
+def compute_stats(data_dir, filename, category, commodity):
     ### PROBLEM: some commodities are still spread over multiple files => solve by gathering stats over multiple files
     csvr = bz.resource(filename)
     ds = bz.discover(csvr)
     d = bz.Data(filename, dshape=ds)
     category = list(d.category)[0]
-    commodity = list(d.commodity)[0]
+    #commodity = list(d.commodity)[0]
     d = bz.transform(d, year=d.date.year, month=d.date.month)
     outdir = path.join(data_dir, 'stats', category, commodity)
     if not path.isdir(outdir):
@@ -438,7 +452,10 @@ def compute_stats(data_dir, filename):
     # problem here is that it's not simply calling a predefined function
     ### NEED PANDAS FOR THIS
     #bz.by(bz.merge(d.year, d.month), arrival=d.arrival.sum())
+    start = time.time()
     df = odo.odo(d, pd.DataFrame)
+    elapsed = time.time() - start
+    print('{0} took {1} secs to be loaded into pandas df with odo'.format(commodity, np.round(elapsed, 2)))
 
     # TODO: read the latest date from config/or use yesterdays date
     date_range = pd.date_range('1/1/2002', time.strftime('%m/%d/%Y'))
@@ -462,9 +479,9 @@ def compute_stats(data_dir, filename):
     get_loc_nas(df, commodity, ['month'], ['state', 'district'], outdir)
     get_loc_nas(df, commodity, ['month'], ['state', 'district', 'market'], outdir)
 
-    nas_over_time(df, commodity, ['year', 'month'], outdir)
-    nas_over_time(df, commodity, ['year'], outdir)
-    nas_over_time(df, commodity, ['month'], outdir)
+    nas_over_time(df, commodity, ['year', 'month'], [], outdir)
+    nas_over_time(df, commodity, ['year'], [], outdir)
+    nas_over_time(df, commodity, ['month'], [], outdir)
 
     ### NOTE: taking into account that arrivals I have not taken into account that arrivals are repeated
     arrivals = d[['date', 'state', 'district', 'market', 'commodity', 'arrival', 'year', 'month']].distinct()
@@ -580,6 +597,7 @@ def aggregate_tonnage(all_dir, stacked_files, headers):
         grouped.to_csv(outpath, index=False)
     return
 
+"""
 def nas_price_wavg(group):
     min_ratio = group['min na_ratio']
     max_ratio = group['max na_ratio']
@@ -599,6 +617,27 @@ def nas_arrival_wavg(group):
     arrival_len = arrival_len.sum()
 
     return pd.Series([arrival_ratio, arrival_len], index=['arrival na_ratio', 'arrival len'])
+"""
+
+### TODO: isn't this bullshit?
+### doesn't it just suffice to count the total number of NAs?
+def nas_price_wavg(group): 
+    min_nas = group['min nas']
+    max_nas = group['max nas']
+    price_nas = group['modal nas']
+    price_len = group['modal len']
+    min_nas = wavg(min_nas, price_len)
+    max_nas = wavg(max_nas, price_len)
+    price_nas = wavg(price_nas, price_len)
+    price_len = price_len.sum()
+    return pd.Series([min_nas, max_nas, price_nas, price_len], index=['min nas', 'max nas', 'modal nas', 'modal len'])
+
+def nas_arrival_wavg(group):
+    arrival_nas = group['arrival nas']
+    arrival_len = group['arrival len']
+    arrival_nas = wavg(arrival_nas, arrival_len)
+    arrival_len = arrival_len.sum()
+    return pd.Series([arrival_nas, arrival_len], index=['arrival nas', 'arrival len'])
 
 def aggregate_nas(all_dir, stacked_files, headers):
     files = filter(lambda x: 'nas' in  x, stacked_files)
@@ -613,18 +652,15 @@ def aggregate_nas(all_dir, stacked_files, headers):
         group_cols = get_groupcols(filename)
         if group_cols == ['commodity']:
             continue
-        print(df.head())
-        print(df.columns)
-        print(group_cols)
         if 'commodity' in df.columns:
             ### TODO: weighted average
-            price_df = df.groupby(group_cols).apply(nas_price_wavg)
+            # price_df = df.groupby(group_cols).apply(nas_price_wavg)
+            price_df = df.groupby(group_cols).agg({'min nas' : np.sum, 'max nas' : np.sum, 'modal nas' : np.sum, 'modal len' : np.sum})
             price_df.reset_index(inplace=True)
-            arrival_df = df.groupby(group_cols).apply(nas_arrival_wavg)
+            #arrival_df = df.groupby(group_cols).apply(nas_arrival_wavg)
+            arrival_df = df.groupby(group_cols).agg({'arrival nas' : np.sum, 'arrival len' : np.sum})
             arrival_df.reset_index(inplace=True)
             # Merge stat dfs on year, month index
-            print(price_df.head())
-            print(arrival_df.head())
             res_df = pd.merge(price_df, arrival_df, how="outer", on=group_cols)
             res_df = df_round(res_df)
             outpath = path.join(all_dir, 'commodity_'+filename)
@@ -632,9 +668,11 @@ def aggregate_nas(all_dir, stacked_files, headers):
 
             df = df.drop('commodity', axis=1)
 
-        price_df = df.groupby(group_cols).apply(nas_price_wavg)
+        # price_df = df.groupby(group_cols).apply(nas_price_wavg)
+        price_df = df.groupby(group_cols).agg({'min nas' : np.sum, 'max nas' : np.sum, 'modal nas' : np.sum, 'modal len' : np.sum})
         price_df.reset_index(inplace=True)
-        arrival_df = df.groupby(group_cols).apply(nas_arrival_wavg)
+        # arrival_df = df.groupby(group_cols).apply(nas_arrival_wavg)
+        arrival_df = df.groupby(group_cols).agg({'arrival nas' : np.sum, 'arrival len' : np.sum})
         arrival_df.reset_index(inplace=True)
         # Merge stat dfs on year, month index
         res_df = pd.merge(price_df, arrival_df, how="outer", on=group_cols)
@@ -643,9 +681,11 @@ def aggregate_nas(all_dir, stacked_files, headers):
         res_df.to_csv(outpath, index=False)
     return
 
+### TODO: does this even make sense???
 def aggregate_coverage(all_dir, stacked_files, headers):
     files = filter(lambda x: 'coverage' in  x, stacked_files)
     for filename in files:
+        print(filename)
         df = pd.DataFrame.from_csv(filename, index_col=None)
         df = df[-df.isin(headers).any(axis=1)]
         df = df.reindex()
@@ -655,7 +695,6 @@ def aggregate_coverage(all_dir, stacked_files, headers):
         group_cols = get_groupcols(filename)
         if group_cols == ['commodity']:
             continue
-        print(group_cols)
         if 'commodity' in df.columns:
             grouped = df.groupby(group_cols + ['commodity'])
             """
@@ -670,8 +709,8 @@ def aggregate_coverage(all_dir, stacked_files, headers):
                 print(grouped.coverage.mean())
                 res = grouped.coverage.mean()
             """
-            res = grouped.agg({'coverage': mean, '#dates': mean})
-            res = res.reset_index()
+            res = grouped.agg({'coverage': np.mean, '#dates': np.sum})
+            res.reset_index(inplace=True)
             #res.columns = name_cols(list(res.columns))
             #print(res.head())
             #print(res.columns)
@@ -693,8 +732,8 @@ def aggregate_coverage(all_dir, stacked_files, headers):
         else:
             res = grouped.coverage.mean()
         """
-        res = grouped.agg({'coverage': mean, '#dates': mean})
-        res = res.reset_index()
+        res = grouped.agg({'coverage': np.mean, '#dates': np.sum})
+        res.reset_index(inplace=True)
         #res.columns = name_cols(list(res.columns))
         #print(res.head())
         #print(res.columns)
@@ -703,8 +742,6 @@ def aggregate_coverage(all_dir, stacked_files, headers):
         res = df_round(res)
         res.to_csv(outpath, index=False)
     return
-
-
 
 def aggregate_stacked(data_dir):
     headers = ['commodity', 'year', 'month', 'state', 'district', 'market', 'arrival', 'records', 'coverage']
@@ -719,6 +756,7 @@ def aggregate_stacked(data_dir):
 
     ### HOW TO aggregate coverage?
     return
+
 
 def combine_commodity_stats(data_dir):
     basedir = path.join(data_dir, 'stats')
@@ -753,6 +791,16 @@ def combine_commodity_stats(data_dir):
     # and execute bash append command
     return
 
+def get_file_commodity(filename):
+    start = time.time()
+    d = bz.Data(filename)
+    ### TODO: test this! how to quickly get first element of array
+    commodity = list(d['commodity_translated'])[0]
+    elapsed = time.time() - start
+    print('{0} took {1} secs to be read with blaze'.format(commodity, np.round(elapsed, 2)))
+    category = list(d['category'])[0]
+    return (category, commodity)
+
 def main(overwrite=True):
     global replace
     replace=ast.literal_eval(overwrite)
@@ -768,15 +816,26 @@ def main(overwrite=True):
     #start = time.time()
     ### TODO: make this one function call?
     #combine_commodity_stats(data_dir)
+    selected_commodities = json.load(open(path.join(data_dir, 'commodities', 'selected_commodities.json'))) 
+    print(selected_commodities) 
     for folder in folders:
         if path.isfile(folder) or folder=='Flowers':
+            continue
+        if not folder in selected_commodities:
+            continue
+        if folder != 'Beverages':
             continue
         print('Switching to category {}'.format(folder))
         os.chdir(path.join(folder, 'integrated'))
         files = glob.glob('*.csv')
         for filename in files:
+            category, commodity = get_file_commodity(filename)
+            print(selected_commodities[folder])
+            if not commodity in selected_commodities[folder]:
+                print('Commodity {0} from category {1} was not selected! Skipping..'.format(commodity, folder))
+                continue
             print('Computing stats for {}'.format(filename))
-            compute_stats(data_dir, filename)
+            compute_stats(data_dir, filename, category, commodity)
             ### TODO: write unpack and print function!
         os.chdir(src_dir)
     os.chdir(init_dir)

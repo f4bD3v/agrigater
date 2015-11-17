@@ -28,7 +28,6 @@ import blaze as bz
 
 """
 
-### TODO: load this list from commodities/selected_commodities.json
 to_insert = {
     'Oil Seeds' : ['Mustard', 'Soybean', 'Groundnut', 'Sesame', 'Sunflower', 'Mustard Oil', 'Groundnut Seed', 'Linseed', 'Safflower', 'Coconut-Oil'],
     'Beverages' : ['Tea', 'Coffee'],
