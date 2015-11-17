@@ -364,7 +364,7 @@ def merge(folder, files, mode, stage='integrated', replace=False):
 def main(task, mode):
     print(task)
     print(mode)
-    comm = json.load(open(path.join(data_dir, 'commodity', 'commodity_corrections_mappings.json'), 'r'))
+    comm = json.load(open(path.join(data_dir, 'commodities', 'commodity_corrections_mappings.json'), 'r'))
     commodity_corrections = comm['commodity_corrections']
     commodity_name_mapping = comm['commodity_name_mapping']
     src_dir = path.join(data_dir, 'agmarknet/by_date_and_commodity')
