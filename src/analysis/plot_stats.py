@@ -8,6 +8,11 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+def ratio_to_num(df):
+    df['nas'] = df['na_ratio'] * df['records']
+    df.drop('na_ratio', inplace=True)
+    return df
+
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
@@ -70,6 +75,9 @@ http://stackoverflow.com/questions/26540035/rotate-label-text-in-seaborn-factorp
 http://stackoverflow.com/questions/22795348/plotting-time-series-data-with-seaborn/22798911#22798911
 
 """
+# # #
+# # #
+
 
 def custom_bar_plot():
     return
@@ -102,6 +110,16 @@ def main():
 if __name__ == "__main__":
     main()
 
+# plot vs multiplot
+
+# total:
+# - year => one bar plot (arrivals: one bar, nas: two bars, coverage: two plots with one bar)
+
+# {year} => one plot
+# {month} => one plot
+# {commodity, year} => commodity plots for all years
+# {commodity, month} => 
+# {commodity, level, {month, year}} => longitudinal plot
 ### for different commodities: plot coverage by year, month
 ### for different commodities: plot coverage by state, district, market
 ### for different commodities: plot coverage avg by month (state, district month)

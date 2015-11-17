@@ -176,6 +176,10 @@ def prepare_commodities(market_locations, mode, overwrite):
 			print('Adding location ..')
 			df = create_comm_doc(df, market_locations)
 			df['date'] = df['date'].apply(lambda x: x.strftime('%Y-%m-%d'))
+			### TODO: further modify df
+			df['arrival'] = df['arrival'].replace(0, np.nan)
+			df = df.rename(columns={'arrival': 'commodityTonnage'})
+			df.insert(4, 'varietyTonnage', np.nan)
 			os.chdir(init_dir)
 			### TODO:
 			# - batch: save to => by_commodity/integrated
