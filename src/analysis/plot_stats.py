@@ -8,6 +8,11 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+def ratio_to_num(df):
+    df['nas'] = df['na_ratio'] * df['records']
+    df.drop('na_ratio', inplace=True)
+    return df
+
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
@@ -104,6 +109,11 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# plot vs multiplot
+
+# total:
+# - year => one bar plot (arrivals: one bar, nas: two bars, coverage: two plots with one bar)
 
 # {year} => one plot
 # {month} => one plot

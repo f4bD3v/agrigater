@@ -169,7 +169,7 @@ def insert_commodities_batch(db, config, logger):
 def name_to_fs(name):
     name = re.sub('\s+', ' ', name.strip('"'))
     fs_name = re.sub('\s+', ' ', name.replace(',', ' '))
-    fs_name = '_'.join(fs_name.split(' '))
+    fs_name = '-'.join(fs_name.split(' '))
     return fs_name 
 
 ### TODO: by creating an intermediate integrated/ store I have created myself a problem
@@ -177,35 +177,41 @@ def name_to_fs(name):
 def insert_commodities(df, mongo_str, batch=False):
     ### TODO: load this list from commodities/selected_commodities.json
     selected_commodities = json.load(open(path.join(data_dir, 'commodities', 'selected_commodities.json'))) 
+    to_strip = ''
     if batch:
         agmarknet_dir = path.join(data_dir, 'agmarknet', 'by_commodity')
+        to_strip = '_stacked_localized.csv'
     else:   
         agmarknet_dir = path.join(data_dir, 'agmarknet', 'by_date_and_commodity')
+        to_strip = '_localized.csv'
     for cat, comm_list in selected_commodities.items(): 
         ### TODO: remove, just for testing
-        if cat != 'Beverages':
+        if cat != 'Cereals':
             continue
         cat_folder = name_to_fs(cat)
         src_folder = path.join(agmarknet_dir, cat_folder, 'integrated')
         os.chdir(src_folder)
         files = glob.glob('*.csv')
+        print(files)
         selected_files = []
         # TODO: test for Coffee and Tea
+        print(comm_list)
         for comm in comm_list:
             # need to filter with every commodity name selected :/
-            selected_files+=list(filter(lambda x: name_to_fs(comm) in x, files))
+            print(name_to_fs(comm))
+            selected_files+=list(filter(lambda x: name_to_fs(comm) == x.replace(to_strip, ''), files))
             print(selected_files)
             # map commodity name to filename?
             # filter with comm_list
         for filename in selected_files:
             print(filename)
-            coll = filename.replace('_stacked_localized.csv', '') if batch else filename.replace('_localized.csv', '')
+            coll = filename.replace(to_strip, '')
             coll = coll.lower()
-            coll = 'commodity_'+coll
+            coll = 'commodity_'+coll+'_varieties'
             print(coll)
             print('Inserting {0} into collection \"{1}\"..'.format(filename, coll))
             target = mongo_str+coll
-            print(mongo_str)
+            print(target)
             d = bz.Data(filename)
             #print('shape', d.dshape)
             #nrows = bz.compute(d.count())
@@ -220,7 +226,7 @@ def insert_commodities(df, mongo_str, batch=False):
             df.rename(columns={'modal': 'modalPrice'}, inplace=True)
             """
             d = bz.transform(d, varietyTonnage=d.commodityTonnage.map(lambda x: np.nan, 'float64'))
-            odo.odo(d, mongo_str)  
+            odo.odo(d, target)  
     return
 
 ### TODO: fill dates in commodity collections --> in manipulation/

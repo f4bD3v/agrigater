@@ -60,6 +60,7 @@ def bz_compute_na_ratio(d, column):
         d = d.distinct()
     table = d[column].map(lambda x: math.isnan(x), 'string').count_values()
     nas = list(table[table[column]==True].count)
+    """
     vals = list(table[table[column]==False].count)
     ratio = 0
     if nas:
@@ -67,6 +68,8 @@ def bz_compute_na_ratio(d, column):
     #percentage = ratio * 100
     #return percentage
     return ratio
+    """
+    return nas
 
 def nas_by_commodity(d, commodity, outdir):
     outpath = path.join(outdir, 'nas_by_commodity.csv')
@@ -81,14 +84,15 @@ def nas_by_commodity(d, commodity, outdir):
         max_price_nas = bz_compute_na_ratio(d, 'max')
 
         row = pd.DataFrame([[commodity, arrival_nas, modal_price_nas, min_price_nas, max_price_nas]], columns=['commodity', 'arrival', 'modal', 'min', 'max'])
-        row = df_round(row)
+        #row = df_round(row)
         row.to_csv(outpath, index=False)
     return
 
 def nas_by_group(series):
     nas = series.isnull().sum() 
-    na_ratio = nas / len(series)
-    return na_ratio
+    #na_ratio = nas / len(series)
+    #return na_ratio
+    return nas
 
 def get_group_len(series):
     return len(series)
@@ -103,12 +107,14 @@ def get_loc_nas(df, commodity, date_group_cols, group_cols, outdir):
     outpath = path.join(outdir, fn)
     if replace or not path.exists(outpath):
         ### group length is the same for all
-        price_df = df.groupby(group_cols + date_group_cols).agg({'min' : {'na_ratio': nas_by_group}, 'max' : {'na_ratio': nas_by_group}, 'modal' : {'na_ratio': nas_by_group, 'len': get_group_len}})
+        #price_df = df.groupby(group_cols + date_group_cols).agg({'min' : {'na_ratio': nas_by_group}, 'max' : {'na_ratio': nas_by_group}, 'modal' : {'na_ratio': nas_by_group, 'len': get_group_len}})
+        price_df = df.groupby(group_cols + date_group_cols).agg({'min' : {'nas': nas_by_group}, 'max' : {'nas': nas_by_group}, 'modal' : {'nas': nas_by_group, 'len': get_group_len}})
         price_df.reset_index(inplace=True)
         price_df.columns = [' '.join(col).strip() for col in price_df.columns.values]
         # Distinct arrivals: do not need to subset on commodity field, since all entries are identical
         df = df.drop_duplicates(subset=['date', 'market'])
-        arrival_df = df.groupby(group_cols + date_group_cols).agg({'arrival': {'na_ratio': nas_by_group, 'len': get_group_len}})
+        #arrival_df = df.groupby(group_cols + date_group_cols).agg({'arrival': {'na_ratio': nas_by_group, 'len': get_group_len}})
+        arrival_df = df.groupby(group_cols + date_group_cols).agg({'arrival': {'nas': nas_by_group, 'len': get_group_len}})
         arrival_df.reset_index(inplace=True)
         arrival_df.columns = [' '.join(col).strip() for col in arrival_df.columns.values]
         # Merge stat dfs on year, month index
@@ -131,12 +137,14 @@ def nas_over_time(df, commodity, date_group_cols, outdir):
     outpath = path.join(outdir, 'nas_by_{}.csv'.format(time))
     if replace or not path.exists(outpath):
         ### group length is the same for all
-        price_df = df.groupby(date_group_cols).agg({'min' : {'na_ratio': nas_by_group}, 'max' : {'na_ratio': nas_by_group}, 'modal' : {'na_ratio': nas_by_group, 'len': get_group_len}})
+        # price_df = df.groupby(date_group_cols).agg({'min' : {'na_ratio': nas_by_group}, 'max' : {'na_ratio': nas_by_group}, 'modal' : {'na_ratio': nas_by_group, 'len': get_group_len}})
+        price_df = df.groupby(group_cols + date_group_cols).agg({'min' : {'nas': nas_by_group}, 'max' : {'nas': nas_by_group}, 'modal' : {'nas': nas_by_group, 'len': get_group_len}})
         price_df.reset_index(inplace=True)
         price_df.columns = [' '.join(col).strip() for col in price_df.columns.values]
         # Distinct arrivals: do not need to subset on commodity field, since all entries are identical
         df = df.drop_duplicates(subset=['date', 'market'])
-        arrival_df = df.groupby(date_group_cols).agg({'arrival': {'na_ratio': nas_by_group, 'len': get_group_len}})
+        #arrival_df = df.groupby(date_group_cols).agg({'arrival': {'na_ratio': nas_by_group, 'len': get_group_len}})
+        arrival_df = df.groupby(group_cols + date_group_cols).agg({'arrival': {'nas': nas_by_group, 'len': get_group_len}})
         arrival_df.reset_index(inplace=True)
         arrival_df.columns = [' '.join(col).strip() for col in arrival_df.columns.values]
         # Merge stat dfs on year, month index
@@ -304,7 +312,7 @@ def get_group_coverage(df, date_range=False, loc=True):
     count = 0 if (len(counts) == 1 and list(counts.index) == [False]) else counts.loc[True] 
     coverage = count / len(date_range)
     # 'district': df[group_col].unique()[0], 
-    coverage = pd.Series({'coverage' : coverage}) # index=[df[group_col].unique()[0]])
+    coverage = pd.Series({'coverage' : coverage, '#dates' : count}) # index=[df[group_col].unique()[0]])
     return coverage
 
 ### WTF IS DIFFERENCT BETWEEN GET_COVERAGE CODE AND GET_LOC_COVERAGE?
@@ -339,7 +347,10 @@ def get_loc_coverage(df, subset_cols, date_group_cols, group_cols, date_range, o
     if replace or not path.exists(outpath): 
         distinct_df = df.drop_duplicates(subset=subset_cols)
         grouped = distinct_df.groupby(date_group_cols + group_cols)
-        res1 = grouped.apply(lambda x: get_group_coverage(x, date_range)) #aggregate(lambda col: get_coverage(x, date_range)).date)
+        res = grouped.apply(lambda x: get_group_coverage(x, date_range)) #aggregate(lambda col: get_coverage(x, date_range)).date)
+        ### WHY NOT SIMPLY RETURN THE NUMBER OF UNIQUE DATES IN THE GROUP
+        ### the following code (unique entries by market (size_col)) seems to be unnecessary since dates will already be unique by state or district
+        """
         if size_col:
             size_df = df.drop_duplicates(subset=['date', size_col])
             grouped = size_df.groupby(date_group_cols + group_cols)
@@ -351,12 +362,13 @@ def get_loc_coverage(df, subset_cols, date_group_cols, group_cols, date_range, o
         merged_df = pd.merge(res1, res2, how="outer", on=date_group_cols + group_cols)
         #merged_df = res1.merge(res2, left_index=True, right_index=True)
         #merged_df.reset_index(inplace=True)
+        """
         commodity = df['commodity'].unique()[0]
-        merged_df.insert(0, 'commodity', commodity)
+        res.insert(0, 'commodity', commodity)
         ### now set reset_index and add commodity column
-        save(merged_df, outpath, replace)
+        save(res, outpath, replace)
         if len(date_group_cols + group_cols) > 2:
-            return merged_df 
+            return res
     return
 
 def mean_by_month(df, outdir, group_cols):
@@ -536,7 +548,7 @@ def group_wavg(group):
 
 def name_cols(cols):
     del cols[-2:] 
-    cols = cols + ['coverage', 'records']
+    cols = cols + ['coverage', '#dates']
     return cols
 
 def aggregate_tonnage(all_dir, stacked_files, headers):
@@ -646,6 +658,7 @@ def aggregate_coverage(all_dir, stacked_files, headers):
         print(group_cols)
         if 'commodity' in df.columns:
             grouped = df.groupby(group_cols + ['commodity'])
+            """
             if 'records' in df.columns:
                 weighted_avg = grouped.apply(group_wavg)
                 records = grouped.records.sum()
@@ -656,8 +669,10 @@ def aggregate_coverage(all_dir, stacked_files, headers):
             else:
                 print(grouped.coverage.mean())
                 res = grouped.coverage.mean()
+            """
+            res = grouped.agg({'coverage': mean, '#dates': mean})
             res = res.reset_index()
-            res.columns = name_cols(list(res.columns)) 
+            #res.columns = name_cols(list(res.columns)) 
             #print(res.head())
             #print(res.columns)
             outpath = path.join(all_dir, 'commodity_'+filename) 
@@ -667,6 +682,7 @@ def aggregate_coverage(all_dir, stacked_files, headers):
             
             df = df.drop('commodity', axis=1)
         grouped = df.groupby(group_cols)
+        """
         if 'records' in df.columns:
             weighted_avg = grouped.apply(group_wavg)
             records = grouped.records.sum()
@@ -676,8 +692,10 @@ def aggregate_coverage(all_dir, stacked_files, headers):
                 res = weighted_avg.merge(records, left_index=True, right_index=True)
         else:
             res = grouped.coverage.mean()
+        """
+        res = grouped.agg({'coverage': mean, '#dates': mean})
         res = res.reset_index()
-        res.columns = name_cols(list(res.columns)) 
+        #res.columns = name_cols(list(res.columns)) 
         #print(res.head())
         #print(res.columns)
         outpath = path.join(all_dir, 'total_'+filename) 

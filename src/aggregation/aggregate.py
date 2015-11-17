@@ -1,4 +1,4 @@
-import pymongo
+import bson
 from bson.son import SON
 from os import path
 import json
@@ -18,12 +18,12 @@ avg_pipeline = [
     },
 
     ### TODO: remove (just for testing)
-    { "$limit" : 100 },
+    #{ "$limit" : 100 },
 
     { "$sort" : SON([("market", 1), ("date", 1)]) },
     { "$group" : { 
         "_id" : {
-            "new_id" : pymongo.objectid.ObjectId(),
+            #"new_id" : bson.objectid.ObjectId,
             "date" : "$date",
             "market" : "$market",
             "commodity" : "$commodityTranslated"
@@ -41,7 +41,7 @@ avg_pipeline = [
         }
     },
     { "$project": {
-        "_id" : "$_id.new_id",
+        "_id" : 0, #"$_id.new_id",
         ## deconstruct the _id field => new _id will be generated upon reinserting
         "date" : "$_id.date",
         "market" : "$_id.market",
@@ -71,7 +71,7 @@ weighted_avg_pipeline = [
     { "$sort" : SON([("market", 1), ("date", 1)]) },
     { "$group" : {
         "_id" : {
-            "new_id" : pymongo.objectid.ObjectId(),
+            #"new_id" : bson.objectid.ObjectId,
             "date" : "$date",
             "market" : "$market",
             "commodity" : "$commodity"
@@ -90,7 +90,7 @@ weighted_avg_pipeline = [
         }
     }, 
     { "$project" : {
-        "_id" : "$_id.new_id", # try this: otherwise: 0
+        "_id" : 0, # try this: otherwise: 0
         ## deconstruct the _id field => new _id will be generated upon reinserting
         "date" : "$_id.date",
         "market" : "$_id.market",
@@ -109,13 +109,12 @@ weighted_avg_pipeline = [
 
 state_aggr_pipeline = [
     ### TODO: do a match here first if multiply does not work with null values
-    { "$limit" : 100 },
+    { "$limit" : 10000 },
 
     ### NOTE: if several commodities in one collection also sort by commodity
     { "$sort" : SON([("state", 1), ("date", 1)]) },
     { "$group" : {
         "_id" : {
-            "new_id" : pymongo.objectid.ObjectId(),
             "date" : "$date",
             "state" : "$state",
             "commodity" : "$commodity"
@@ -124,11 +123,12 @@ state_aggr_pipeline = [
         "numerator" : { "$sum" : { "$multiply" : [ "$price", "$commodityTonnage" ] } },
         "commodityTonnage" : { "$sum" : "$commodityTonnage" },
         "category" : { "$first" : "$category"},
-        "districts" : { "$addToSet": "$district" }
+        "districts" : { "$addToSet": "$district" },
+        "markets" : { "$addToSet" : "$market" }
         }
     }, 
     { "$project" : {
-        "_id" : "$_id.new_id", # try this: otherwise: 0
+        "_id" : 0, # try this: otherwise: 0
         ## deconstruct the _id field => new _id will be generated upon reinserting
         "date" : "$_id.date",
         "state" : "$_id.state",
@@ -136,7 +136,8 @@ state_aggr_pipeline = [
         "category" : 1,
         "price" : { "$divide" : ["$numerator", "$commodityTonnage"]},
         "commodityTonnage" : 1,
-        "districts": 1,
+        "districts" : 1,
+        "markets": 1
         }
     }
 ]
@@ -148,7 +149,6 @@ district_aggr_pipeline = [
     { "$sort" : SON([("district", 1), ("date", 1)]) },
     { "$group" : {
         "_id" : {
-            "new_id" : pymongo.objectid.ObjectId(),
             "date" : "$date",
             "state" : "$state",
             "district" : "$district",
@@ -161,7 +161,7 @@ district_aggr_pipeline = [
         }
     }, 
     { "$project" : {
-        "_id" : "$_id.new_id", # try this: otherwise: 0
+        "_id" : 0, # try this: otherwise: 0
         ## deconstruct the _id field => new _id will be generated upon reinserting
         "date" : "$_id.date",
         "state": "$_id.state",
@@ -180,7 +180,7 @@ district_aggr_pipeline = [
 # => thanks to the $out operator we can avoid extracting (cursor + memory) and reinserting the data with pymongo.insert_many or odo
 
 def add_out_coll(pipeline, out_coll):
-    return pipeline.append({"$out" : out_coll})
+    return pipeline + [{"$out" : out_coll}]
 
 ### import database handler
 def comm_to_coll(comm, suffix=None, prefix=None):
@@ -189,38 +189,54 @@ def comm_to_coll(comm, suffix=None, prefix=None):
         coll = '_'.join([coll, suffix])
     if prefix:
         coll = '_'.join([prefix, coll])
-    return coll
+    return coll.lower()
 
 ### TODO: do not need to aggregate by commodity, since files     
 ### TODO: to explore aggregation details, pass explain=True
 
 def aggregate_by_variety(db, cat_comm, weighted=False):
-    for cat, comm_list in cat_comm.iteritems():
+    print('weighted', weighted)
+    for cat, comm_list in cat_comm.items():
+        if cat != 'Cereals':
+            continue
         for comm in comm_list:
-            coll = comm_to_coll(comm, 'variety')
-            out_coll = comm_to_coll(comm)
+            coll = comm_to_coll(comm, 'varieties', 'market')
+            out_coll = comm_to_coll(comm, None, 'market')
+            print(coll, out_coll)
             ### TODO: different collections for (weighted) averages? otherwise the aggregation will overwrite one another
             if weighted:
-                db[coll].aggregate(add_out_coll(weighted_avg_pipeline, out_coll), allowDiskUse=True)
+                w_avg = add_out_coll(weighted_avg_pipeline, out_coll)
+                print(w_avg)
+                db.db[coll].aggregate(w_avg, allowDiskUse=True)
             else:
-                db[coll].aggregate(add_out_coll(avg_pipeline, out_coll), allowDiskUse=True)
+                avg = add_out_coll(avg_pipeline, out_coll)
+                print(avg)
+                db.db[coll].aggregate(avg, allowDiskUse=True)
     return
 
 def aggregate_by_level(db, cat_comm, level):
-    for cat, comm_list in cat_comm.iteritems():
+    for cat, comm_list in cat_comm.items():
+        if cat != 'Cereals':
+            continue
         for comm in comm_list:
-            coll = comm_to_coll(comm)
+            coll = comm_to_coll(comm, None, 'market')
             out_coll = comm_to_coll(comm, None, level)
-            db[coll].aggregate(add_out_coll(state_aggr_pipeline, out_coll), allowDiskUse=True)
+            admin_wavg = []
+            if level == 'state':
+                admin_wavg = add_out_coll(state_aggr_pipeline, out_coll)
+            else:
+                admin_wavg = add_out_coll(district_aggr_pipeline, out_coll)
+            print(admin_wavg)
+            db.db[coll].aggregate(admin_wavg, allowDiskUse=True)
     return
 
 def main():
     cat_comm = json.load(open(path.join(data_dir, 'commodities', 'selected_commodities.json'), 'r'))
-    config = yaml.load(open('../../db/db_config.yaml', 'r'))
+    config = yaml.load(open('../db/db_config.yaml', 'r'))
     # for the purpose of testing, running with limit
     db = MongoDB(config['meteordb'], config['address'], config['meteorport'])
-    aggregate_by_variety(db, cat_comm)
-    #aggregate_by_level(db, cat_comm, 'state')
+    #aggregate_by_variety(db, cat_comm)
+    aggregate_by_level(db, cat_comm, 'state')
     return
 
 if __name__ == "__main__":
