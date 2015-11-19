@@ -34,7 +34,6 @@ def save(df, outpath, replace):
     if replace and path.exists(outpath):
         os.remove(outpath)
     if isinstance(df, bz.expr.split_apply_combine.By) or isinstance(df, bz.expr.expressions.Projection):
-        print(bz.compute(df.head()))
         odo.odo(df, outpath, ds=df.dshape)
     else:
         df = df_round(df)
@@ -99,6 +98,11 @@ def nas_by_group(series):
 def get_group_len(series):
     return len(series)
 
+def joint_nas(group):
+    joint_na_group = group.loc[group['modal'].isnull() & group['commodityTonnage'].isnull()]
+    joint_nas = joint_na_group.shape[0]#joint_na_group.count()
+    return pd.Series([joint_nas], index=['joint nas'])
+
 def get_loc_nas(df, commodity, date_group_cols, group_cols, outdir):
     name = '-'.join(group_cols)
     time = '-'.join(date_group_cols)
@@ -120,7 +124,10 @@ def get_loc_nas(df, commodity, date_group_cols, group_cols, outdir):
         commodityTonnage_df.reset_index(inplace=True)
         commodityTonnage_df.columns = [' '.join(col).strip() for col in commodityTonnage_df.columns.values]
         # Merge stat dfs on year, month index
+        joint_nas_df = df.groupby(group_cols + date_group_cols).apply(joint_nas)
+        joint_nas_df.reset_index(inplace=True)
         res_df = pd.merge(price_df, commodityTonnage_df, how="outer", on=group_cols+date_group_cols)
+        res_df = pd.merge(res_df, joint_nas_df, how="outer", on=group_cols+date_group_cols)
         res_df = df_round(res_df)
         #commodity_df = commodityTonnage_df.merge(price_df, left_index=True, right_index=True)
         commodity_df = res_df
@@ -154,7 +161,10 @@ def nas_over_time(df, commodity, date_group_cols, group_cols, outdir):
         commodityTonnage_df.reset_index(inplace=True)
         commodityTonnage_df.columns = [' '.join(col).strip() for col in commodityTonnage_df.columns.values]
         # Merge stat dfs on year, month index
+        joint_nas_df = df.groupby(group_cols + date_group_cols).apply(joint_nas)
+        joint_nas_df.reset_index(inplace=True)
         res_df = pd.merge(price_df, commodityTonnage_df, how="outer", on=date_group_cols)
+        res_df = pd.merge(res_df, joint_nas_df, how="outer", on=group_cols+date_group_cols)
         res_df = df_round(res_df)
         #commodity_df = commodityTonnage_df.merge(price_df, left_index=True, right_index=True)
         commodity_df = res_df
@@ -319,9 +329,9 @@ def get_group_coverage(df, date_range=False, loc=True):
     counts = boolarr.value_counts()
     ### TODO: only print zero if only row name is False
     count = 0 if (len(counts) == 1 and list(counts.index) == [False]) else counts.loc[True]
-    coverage = count / len(date_range)
+    coverage = count / len(date_range) * 100
     # 'district': df[group_col].unique()[0],
-    coverage = pd.Series({'coverage' : count})#, '#dates' : count}) # index=[df[group_col].unique()[0]])
+    coverage = pd.Series({'coverage' : coverage})#, '#dates' : count}) # index=[df[group_col].unique()[0]])
     return coverage
 
 ### WTF IS DIFFERENCT BETWEEN GET_COVERAGE CODE AND GET_LOC_COVERAGE?
@@ -337,7 +347,6 @@ def get_coverage(df, date_range, outdir, group_cols = ['commodity']):
             dates = df['date'].unique()
             commodity_cover = len(dates)/len(date_range)
             res_df = pd.DataFrame([[commodity_cover]], columns=['coverage'])
-            group_cols = ['commodity']
         #if res_df.index.name:
         res_df.reset_index(inplace=True)
         commodity = df['commodity'].unique()[0]
@@ -412,15 +421,15 @@ def get_coverages(df, date_range, outdir, commodity):
     ### columns on which to drop duplicates for distinct date entries per market:
     market_cols = ['date', 'market']
     #get_loc_coverage(df, market_cols, [], ['state', 'district', 'market'], date_range, outdir)
-    get_loc_coverage(df, ['date', 'district'], [], ['state', 'district'], date_range, outdir, 'market')
+    #get_loc_coverage(df, ['date', 'district'], [], ['state', 'district'], date_range, outdir, 'market')
     get_loc_coverage(df, ['date', 'state'], [], ['state'], date_range, outdir, 'market')
 
     #get_loc_coverage(df, market_cols, ['year'], ['state', 'district', 'market'], None, outdir)
-    get_loc_coverage(df, ['date', 'district'], ['year'], ['state', 'district'], None, outdir, 'market')
+    #get_loc_coverage(df, ['date', 'district'], ['year'], ['state', 'district'], None, outdir, 'market')
     get_loc_coverage(df, ['date', 'state'], ['year'], ['state'], None, outdir, 'market')
 
     #ym_market = get_loc_coverage(df, market_cols, ['year', 'month'], ['state', 'district', 'market'], None, outdir)
-    ym_district = get_loc_coverage(df, ['date', 'district'], ['year', 'month'], ['state', 'district'], None, outdir, 'market')
+    #ym_district = get_loc_coverage(df, ['date', 'district'], ['year', 'month'], ['state', 'district'], None, outdir, 'market')
     ym_state = get_loc_coverage(df, ['date', 'state'], ['year', 'month'], ['state'], None, outdir, 'market')
     # on date X 7 distinct commodityTonnage entries, 12 distinct price entries for a commodity
     #(comm_cover, year_comm_cover, year_month_comm_cover), (year_market_cover, year_district_cover, year_state_cover)
@@ -428,7 +437,7 @@ def get_coverages(df, date_range, outdir, commodity):
     ### TODO: by month mean coverage
     ### additional group by month: and call avg
     #mean_by_month(ym_market, outdir, ['state', 'district', 'market'])
-    mean_by_month(ym_district, outdir, ['state', 'district'])
+    #mean_by_month(ym_district, outdir, ['state', 'district'])
     mean_by_month(ym_state, outdir, ['state'])
     return
 
@@ -465,19 +474,19 @@ def compute_stats(data_dir, filename, category, commodity):
     ### In what particular periods do NAs occur?
     # does data quality improve over time? na ratio per (year, month) => further group by commodity before saving final dataframe
     get_loc_nas(df, commodity, [], ['state'], outdir)
-    get_loc_nas(df, commodity, [], ['state', 'district'], outdir)
+    #get_loc_nas(df, commodity, [], ['state', 'district'], outdir)
     #get_loc_nas(df, commodity, [], ['state', 'district', 'market'], outdir)
 
     get_loc_nas(df, commodity, ['year', 'month'], ['state'], outdir)
-    get_loc_nas(df, commodity, ['year', 'month'], ['state', 'district'], outdir)
+    #get_loc_nas(df, commodity, ['year', 'month'], ['state', 'district'], outdir)
     #get_loc_nas(df, commodity, ['year', 'month'], ['state', 'district', 'market'], outdir)
 
     get_loc_nas(df, commodity, ['year'], ['state'], outdir)
-    get_loc_nas(df, commodity, ['year'], ['state', 'district'], outdir)
+    #get_loc_nas(df, commodity, ['year'], ['state', 'district'], outdir)
     #get_loc_nas(df, commodity, ['year'], ['state', 'district', 'market'], outdir)
 
     get_loc_nas(df, commodity, ['month'], ['state'], outdir)
-    get_loc_nas(df, commodity, ['month'], ['state', 'district'], outdir)
+    #get_loc_nas(df, commodity, ['month'], ['state', 'district'], outdir)
     #get_loc_nas(df, commodity, ['month'], ['state', 'district', 'market'], outdir)
 
     nas_over_time(df, commodity, ['year', 'month'], [], outdir)
@@ -492,7 +501,7 @@ def compute_stats(data_dir, filename, category, commodity):
         commodityTonnage_by_month(commodityTonnage_by_year_month, outdir)
 
     #commodityTonnage_by_level(commodityTonnages, outdir, ['state', 'district', 'market'])
-    commodityTonnage_by_level(commodityTonnages, outdir, ['state', 'district'])
+    #commodityTonnage_by_level(commodityTonnages, outdir, ['state', 'district'])
     commodityTonnage_by_level(commodityTonnages, outdir, ['state'])
     """
     commodityTonnage_by_month(commodityTonnage_by_year_month, outdir)
@@ -658,13 +667,13 @@ def aggregate_nas(all_dir, stacked_files, headers):
         if 'commodity' in df.columns:
             ### TODO: weighted average
             # price_df = df.groupby(group_cols).apply(nas_price_wavg)
-            price_df = df.groupby(group_cols).agg({'min nas' : np.sum, 'max nas' : np.sum, 'modal nas' : np.sum, 'modal len' : np.sum})
+            price_df = df.groupby(group_cols + ['commodity', 'category']).agg({'min nas' : np.sum, 'max nas' : np.sum, 'modal nas' : np.sum, 'modal len' : np.sum})
             price_df.reset_index(inplace=True)
             #commodityTonnage_df = df.groupby(group_cols).apply(nas_commodityTonnage_wavg)
-            commodityTonnage_df = df.groupby(group_cols).agg({'commodityTonnage nas' : np.sum, 'commodityTonnage len' : np.sum})
+            commodityTonnage_df = df.groupby(group_cols + ['commodity', 'category']).agg({'commodityTonnage nas' : np.sum, 'commodityTonnage len' : np.sum, 'joint nas' : np.sum})
             commodityTonnage_df.reset_index(inplace=True)
             # Merge stat dfs on year, month index
-            res_df = pd.merge(price_df, commodityTonnage_df, how="outer", on=group_cols)
+            res_df = pd.merge(price_df, commodityTonnage_df, how="outer", on=group_cols + ['commodity', 'category'])
             res_df = df_round(res_df)
             outpath = path.join(all_dir, 'commodity_'+filename)
             res_df.to_csv(outpath, index=False)
@@ -675,7 +684,7 @@ def aggregate_nas(all_dir, stacked_files, headers):
         price_df = df.groupby(group_cols).agg({'min nas' : np.sum, 'max nas' : np.sum, 'modal nas' : np.sum, 'modal len' : np.sum})
         price_df.reset_index(inplace=True)
         # commodityTonnage_df = df.groupby(group_cols).apply(nas_commodityTonnage_wavg)
-        commodityTonnage_df = df.groupby(group_cols).agg({'commodityTonnage nas' : np.sum, 'commodityTonnage len' : np.sum})
+        commodityTonnage_df = df.groupby(group_cols).agg({'commodityTonnage nas' : np.sum, 'commodityTonnage len' : np.sum, 'joint nas' : np.sum})
         commodityTonnage_df.reset_index(inplace=True)
         # Merge stat dfs on year, month index
         res_df = pd.merge(price_df, commodityTonnage_df, how="outer", on=group_cols)
@@ -699,7 +708,7 @@ def aggregate_coverage(all_dir, stacked_files, headers):
         if group_cols == ['commodity']:
             continue
         if 'commodity' in df.columns:
-            grouped = df.groupby(group_cols + ['commodity'])
+            grouped = df.groupby(group_cols + ['commodity', 'category'])
             """
             if 'records' in df.columns:
                 weighted_avg = grouped.apply(group_wavg)
@@ -789,7 +798,6 @@ def combine_commodity_stats(data_dir):
                     os.makedirs(outdir)
                 outpath = path.join(outdir, filename)
                 cmd = '/bin/bash -c \"cat {0} >> {1}\"'.format(filename, outpath, replace)
-                print(cmd)
                 os.system(cmd)
         os.chdir(all_dir)
     # delete *all.csv files
@@ -829,15 +837,15 @@ def main(overwrite=True):
             continue
         if not folder in selected_commodities:
             continue
-        if folder != 'Cereals':
-            continue
+        #if folder != 'Cereals':
+        #    continue
         print('Switching to category {}'.format(folder))
         os.chdir(path.join(folder, 'integrated'))
         files = glob.glob('*.csv')
         for filename in files:
             category, commodity = get_file_commodity(filename)
             print(selected_commodities[folder])
-            if not commodity in selected_commodities[folder]:
+            if not (commodity in selected_commodities[folder]):
                 print('Commodity {0} from category {1} was not selected! Skipping..'.format(commodity, folder))
                 continue
             print('Computing stats for {}'.format(filename))

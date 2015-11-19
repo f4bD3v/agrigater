@@ -60,10 +60,9 @@ def page_barplots(xlabel, ylabels, stype, title, page_id, chunk, pdf):
     for (idx, group), ax in plot_tuples:
         df = remove_group_idx(group)
         df = complete_df(df, xlabel)
-        print(df.head())
         if len(ylabels) > 1:
             df = tidy_df(df, xlabel, ylabels, stype) 
-            sns.barplot(x=xlabel, y=ylabels, hue=stype, data=df, ax=ax)
+            sns.barplot(x=xlabel, y='value', hue=stype, data=df, ax=ax)
         else:
             sns.barplot(x=xlabel, y=ylabels[0], data=df, ax=ax)
         # using year as subplot title
@@ -85,19 +84,31 @@ def save_plot(fig, outpath, filename, ext):
     fig.savefig(path.join(outpath, outfile))
 
 def get_plot_filename(filename, props, ext):
-    props = list(props.values())
+    stype = props.pop('stype', None)
+    atype = props.pop('aggrlvl', None)
+    admin = props.pop('admin', [])
+    subpath = ''
+    folders = list(filter(None, [stype, atype])) + admin
+    print(folders)
+    if folders:
+        subpath = path.join(*folders)
+        check = path.join(outpath, subpath)
+        if not path.exists(check):
+            os.makedirs(check)
+    props = list(props.values()) + [admin]
     props = list(filter(None, props))
     props = [item if isinstance(item, list) else item for item in props]
     print('props', props)
-    if not props: 
-        return filename+'.'+ext
-    elif len(props) > 1 or isinstance(props[0], list):
-        props = ['-'.join(item) for item in props]
+    if props: 
+        props = ['-'.join(item) if isinstance(item, list) else item for item in props]
+    else:
+        return path.join(subpath, filename+'.'+ext)
+    #elif len(props) > 1 or isinstance(props[0], list):
     props.insert(0, filename)
     outfile = '_'.join(props)
     outfile+=('.'+ext)
     # first: filter None from props
-    return outfile
+    return path.join(subpath, outfile)
 
 def remove_group_idx(df):
     if df.index.name:
@@ -123,24 +134,27 @@ def complete_df(df, xlabel):
 def tidy_df(df, xlabel, ylabels, stype):
     #print('WARNING: df does not have an index name', df.head())
     tidy_df = pd.melt(df, id_vars=xlabel, value_vars=ylabels, var_name=stype)
+    print(tidy_df.head())
     return tidy_df
 
 ### TODO: for Beverages month 10 has a huge column: find anomaly
-def simple_barplot(df, x_axis, filename, exts):
+def simple_barplot(xlabel, ylabels, stype, df, filename, exts):
     ## how to have multiple y values? pass list?
+    print(xlabel, ylabels)
     fig = plt.figure()
-    barplot = sns.barplot(x=x_axis, y='commodityTonnage', data=df)
+    df = complete_df(df, xlabel)
+    if len(ylabels) > 1:
+        df = tidy_df(df, xlabel, ylabels, stype) 
+        print(df.head())
+        barplot = sns.barplot(x=xlabel, y='value', hue=stype, data=df)
+    else:
+        barplot = sns.barplot(x=xlabel, y=ylabels[0], data=df)
     fig.add_axes(barplot)
-    print(type(fig))
     ### TODO: call complete_df() and tidy_df()
     for ext in exts:
         save_plot(fig, outpath, filename, '.'+ext)
     return
 
-### TODO: pass props information: props=[type, category]
-### TODO: when plotting by commodity, the specific commodity has to be appended to filename
-### what about directory structure?
-### TODO: FUNCTION THAT CREATES PLOT NAME FROM PASSED META INFO
 def longitudinal_plot(df, group_cols, filename, props, ext='pdf'):
     #df['date'] = df.apply(lambda row: str(int(row['year'])) + '-' + str(int(row['month'])), axis=1)
     #df = pd.DataFrame.from_csv(filename, index_col = None)
@@ -152,7 +166,7 @@ def longitudinal_plot(df, group_cols, filename, props, ext='pdf'):
     xlabel = props.pop('xlabel', None)
     ylabels = props.pop('ylabels', None)
     print(ylabels)
-    stype = props.pop('stype', None)
+    stype = props['stype']
     plot_chunks = chunks(list(grouped), 6)
     ### TODO: append props info to filename?
     title = ' '.join(filename.split('_'))
@@ -169,11 +183,8 @@ def longitudinal_plot(df, group_cols, filename, props, ext='pdf'):
 
 def get_ylabels(stype):
     labels = []
-    print(stype)
     if stype == 'nas':
-        #labels = ['modal nas', 'modal len']
-        labels = ['commodityTonnage nas', 'commodityTonnage len']
-        ### TODO: two separate calls for this kind of plot
+        labels = ['price_na%', 'tonnage_na%', 'joint_na%']
     elif stype == 'coverage':
         labels = ['coverage']
     elif stype == 'tonnage':
@@ -182,22 +193,35 @@ def get_ylabels(stype):
         print('Non-existant stats type {}'.format(stype))
     return labels
 
+def prepare_data(stype, df):
+    if stype == 'nas':
+        df['price_na%'] = df['modal nas']/df['modal len'] * 100
+        df.drop('min nas', inplace=True, axis=1)
+        df.drop('max nas', inplace=True, axis=1)
+        df.drop('modal nas', inplace=True, axis=1)
+        df.drop('modal len', inplace=True, axis=1)
+        df['tonnage_na%'] = df['commodityTonnage nas']/df['commodityTonnage len'] * 100
+        df.drop('commodityTonnage nas', inplace=True, axis=1)
+        df['joint_na%'] = df['joint nas']/df['commodityTonnage len'] * 100
+        df.drop('joint nas', inplace=True, axis=1)
+        df.drop('commodityTonnage len', inplace=True, axis=1)
+    return df
+
 ### TODO: add ylabels initialization
-def plot_by_time(stype, time_cols, filename, df=pd.DataFrame(), comm=None, cat=None):
+def plot_by_time(stype, aggr_lvl, time_cols, filename, df=pd.DataFrame(), comm=None, cat=None):
     col_len = len(time_cols)
     if df.empty:
         print('No commodity group given to plot! Reading dataframe from: {}'.format(filename))
-        print(time_cols)
         df = pd.DataFrame.from_csv(filename, index_col = None)
-    print(df.head())
+    df = prepare_data(stype, df)
     ylabels = get_ylabels(stype)
     props = {
         'stype' : stype,
+        'aggrlvl' : aggr_lvl,
         'category' : cat,
         'commodity' : comm,
         'ylabels' : ylabels
     }
-    print(props)
     filename = filename.replace('.csv', '')
     if col_len== 2:
         print('Preparing longitudinal plot for:', time_cols)
@@ -205,7 +229,8 @@ def plot_by_time(stype, time_cols, filename, df=pd.DataFrame(), comm=None, cat=N
         properties = dict(props)
         longitudinal_plot(df, ['year'], filename, properties)
     elif col_len == 1:
-        simple_barplot(df, time_cols[0], filename, ['png', 'pdf'])
+        xlabel = 'month'
+        simple_barplot(xlabel, ylabels, stype, df, filename, ['png', 'pdf'])
         ### TODO: longitudinal plot vs other options: pdf of totals for all states, all districts in a state, pdf of single plots for commodities in a category
         #single_barplot(filename) if aggr_lvl == 'total' else longitudinal_plot(filename, time_cols, aggr_lvl)
         ## plot all commodities together per commodity aggr_lvl
@@ -216,17 +241,18 @@ def plot_by_time(stype, time_cols, filename, df=pd.DataFrame(), comm=None, cat=N
 ### NOTE: not exclusive to total (actually plot_by_lvl), is warapped in plot_commodity_by_lvl to plot commodity group dfs
 ### a.k.a plot_TOTAL_by_lvl
 ### TODO: add y axes initialization
-def plot_by_lvl(stype, admin_lvl, time_cols, filename, df=pd.DataFrame(), comm=None):
+def plot_by_lvl(stype, aggr_lvl, admin_lvl, time_cols, filename, df=pd.DataFrame(), comm=None):
     ### NOTE: sure this is a longitudinal plot with level as group_col???
     if df.empty:
         print('No commodity group given to plot! Reading dataframe from: {}'.format(filename))
         print(admin_lvl, time_cols)
         df = pd.DataFrame.from_csv(filename, index_col = None)
-    print(df.head())
+    df = prepare_data(stype, df)
     ylabels = get_ylabels(stype)
     filename = filename.replace('.csv', '')
     props = {
         'stype' : stype,
+        'aggrlvl' : aggr_lvl,
         'commodity' : comm,
         'ylabels' : ylabels
     }
@@ -241,14 +267,10 @@ def plot_by_lvl(stype, admin_lvl, time_cols, filename, df=pd.DataFrame(), comm=N
             print('Preparing longitudinal plot for:\n', admin_unit, 'years')
             if isinstance(admin_unit, tuple):
                 admin_unit = list(admin_unit)
-            print(props)
-            print(admin_unit)
-            props['admin'] = admin_unit
+            props['admin'] = [admin_unit]
             props['xlabel'] = 'month'
-            print(props)
             properties = dict(props)
             longitudinal_plot(group, ['year'], filename, properties) 
-            print(props)
     elif len(admin_lvl) > 1:
         ## month or year => xlabel, one subplot by district
         # first group by state and then group by district in longitudincal plot
@@ -257,25 +279,21 @@ def plot_by_lvl(stype, admin_lvl, time_cols, filename, df=pd.DataFrame(), comm=N
             print('Preparing longitudinal plot for:\n', state, 'districts')
             props['admin'] = [state, 'districts']
             props['xlabel'] = time_cols[0]
-            print(props)
             properties = dict(props)
             longitudinal_plot(group, ['district'], filename, properties)
-            print(props)
     else: ### case (state, month|year) => admin_lvl == ['state']
     ### pass admin_lvl as props info
     ### one longitudinal plot for all admin level groups
         print('Preparing longitudinal plot for:', 'states')
-        props['admin'] = admin_lvl
+        #props['admin'] = admin_lvl
         props['xlabel'] = time_cols[0]
         properties = dict(props)
         longitudinal_plot(df, admin_lvl, filename, properties)
     return 
 
-def plot_by_commodity(stype, admin_lvl, time_cols, filename):
+def plot_by_commodity(stype, aggr_lvl, admin_lvl, time_cols, filename):
     ### TODO: CREATE OUTFILE NAME HERE AND PASS ALONG
-    print(filename)
     df = pd.DataFrame.from_csv(filename, index_col = None)
-    print(df.head())
     if not time_cols:
         ### totals by admin lvl only, not dealt with
         return
@@ -284,9 +302,9 @@ def plot_by_commodity(stype, admin_lvl, time_cols, filename):
         for comm, comm_group in commodity_grouped:
             ### TODO: need to pass group_col?
             if admin_lvl:
-                plot_by_lvl(stype, admin_lvl, time_cols, filename, comm_group, comm) 
+                plot_by_lvl(stype, aggr_lvl, admin_lvl, time_cols, filename, comm_group, comm) 
             else:
-                plot_by_time(stype, time_cols, filename, comm_group, comm)
+                plot_by_time(stype, aggr_lvl, time_cols, filename, comm_group, comm)
     else:
         ### TODO: not all cases dealt with: if 'year' or 'month' pdf per cat plot => means group by category (need to add category columms to stats data)
         # group_col for longitudinal plot: commodity
@@ -295,9 +313,11 @@ def plot_by_commodity(stype, admin_lvl, time_cols, filename):
             # by state, district
             commodity_grouped = df.groupby('commodity')
             for comm, comm_group in commodity_grouped:
-                plot_by_lvl(stype, admin_lvl, time_cols, filename, comm_group, comm) 
+                plot_by_lvl(stype, aggr_lvl, admin_lvl, time_cols, filename, comm_group, comm) 
         else:
+            df = prepare_data(stype, df)
             category_grouped = df.groupby('category')
+            filename = filename.replace('.csv', '')
             for cat, cat_group in category_grouped:
                 # how to pass commodity group to these functions
                 print(cat, cat_group)
@@ -305,6 +325,7 @@ def plot_by_commodity(stype, admin_lvl, time_cols, filename):
                 ### CALL Longitdunial plot directly?
                 props = {
                     'stype' : stype,
+                    'aggrlvl' : aggr_lvl,
                     'category' : cat,
                     'ylabels' : get_ylabels(stype),
                     'xlabel': time_cols[0]
@@ -316,7 +337,6 @@ def get_cols_from_fn(filename):
     splits = filename.rstrip('.csv').split('_')[-2:]
     to_flatten = list(map(lambda x: x.split('-'), splits))
     # return (admin_level_cols, time_cols)
-    print(to_flatten)
     if 'by' in splits:
         if 'month' in to_flatten[1] or 'year' in to_flatten[1]:
             return (None, to_flatten[1])
@@ -327,7 +347,10 @@ def get_cols_from_fn(filename):
 
 ### TODO: need inverse dictionary for commodity category lookup        
 def plot_aggr_lvl_handler(files, aggr_lvl, stype):
+    #count = 3
     for filename in files:
+        #if count < 1:
+        #    continue
         admin_lvl_cols, time_cols = get_cols_from_fn(filename) 
         print(admin_lvl_cols, time_cols)
         ### TODO; if 'commodity' aggr_lvl simply pass this variable to extend code in plot wrapper (the plot function does not care what it's plotting)
@@ -335,22 +358,23 @@ def plot_aggr_lvl_handler(files, aggr_lvl, stype):
             ### TODO: longitudinal plot vs other options: pdf of totals for all states, all districts in a state
             print('inside admin_lvl_cols')
             if aggr_lvl == 'total':
-                plot_by_lvl(stype, admin_lvl_cols, time_cols, filename)
+                plot_by_lvl(stype, aggr_lvl, admin_lvl_cols, time_cols, filename)
             elif aggr_lvl == 'commodity':
                 ### there are commodity 'total' files? no
                 ### ==> NOTE: there is always a group col
                 # difference between 'total' and 'commodity' files is simply additional groupby by commodity
-                plot_by_commodity(stype, admin_lvl_cols, time_cols, filename)
+                plot_by_commodity(stype, aggr_lvl, admin_lvl_cols, time_cols, filename)
             else:
                 print('Wrong aggregation level: ', aggr_lvl)
         else:
             ### TODO: how to deal with 'total' vs 'commodity' here?
             if aggr_lvl == 'total':
-                plot_by_time(stype, time_cols, filename)
+                plot_by_time(stype, aggr_lvl, time_cols, filename)
             elif aggr_lvl == 'commodity':
-                plot_by_commodity(stype, None, time_cols, filename)    
+                plot_by_commodity(stype, aggr_lvl, None, time_cols, filename)    
             else:
                 print('Wrong aggregation level: ', aggr_lvl)
+        #count = count - 1
     return
     # if total: do smth
     # if commodity: df has to be loaded, grouped by commodity and plots executed by group
