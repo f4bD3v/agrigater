@@ -367,6 +367,7 @@ def main(task, mode):
     comm = json.load(open(path.join(data_dir, 'commodities', 'commodity_corrections_mappings.json'), 'r'))
     commodity_corrections = comm['commodity_corrections']
     commodity_name_mapping = comm['commodity_name_mapping']
+    print('commodity name mapping: ', commodity_name_mapping)
     src_dir = path.join(data_dir, 'agmarknet/by_date_and_commodity')
     init_dir = os.getcwd()
     os.chdir(src_dir)
