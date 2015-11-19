@@ -573,8 +573,10 @@ def aggregate_tonnage(all_dir, stacked_files, headers):
     files = filter(lambda x: 'tonnage' in x, stacked_files)
     ### -
     for filename in files:
-        df = pd.DataFrame.from_csv(filename, index_col=None)
+        #df = pd.DataFrame.from_csv(filename, index_col=None)
         #df['commodityTonnage'] = df['commodityTonnage'].astype('float64')
+        df = pd.read_csv(filename, index_col=None, dtype='object') # preempt pandas from inferring types
+         #df['commodityTonnage'] = df['commodityTonnage'].astype('float64')
         # remove superfluous headers from dfs
         df = df[-df.isin(headers).any(axis=1)]
         df = df.reindex()
@@ -622,7 +624,7 @@ def nas_commodityTonnage_wavg(group):
 
 ### TODO: isn't this bullshit?
 ### doesn't it just suffice to count the total number of NAs?
-def nas_price_wavg(group): 
+def nas_price_wavg(group):
     min_nas = group['min nas']
     max_nas = group['max nas']
     price_nas = group['modal nas']
@@ -643,7 +645,7 @@ def nas_commodityTonnage_wavg(group):
 def aggregate_nas(all_dir, stacked_files, headers):
     files = filter(lambda x: 'nas' in  x, stacked_files)
     for filename in files:
-        df = pd.DataFrame.from_csv(filename, index_col=None)
+        df = pd.read_csv(filename, index_col=None, dtype='object')
         # remove superfluous headers from dfs
         df = df[-df.isin(headers).any(axis=1)]
         df = df.reindex()
@@ -687,7 +689,7 @@ def aggregate_coverage(all_dir, stacked_files, headers):
     files = filter(lambda x: 'coverage' in  x, stacked_files)
     for filename in files:
         print(filename)
-        df = pd.DataFrame.from_csv(filename, index_col=None)
+        df = pd.read_csv(filename, index_col=None, dtype='object')
         df = df[-df.isin(headers).any(axis=1)]
         df = df.reindex()
         df.to_csv(filename, index=False)
@@ -786,7 +788,9 @@ def combine_commodity_stats(data_dir):
                 if not path.isdir(outdir):
                     os.makedirs(outdir)
                 outpath = path.join(outdir, filename)
-                os.system('/bin/bash -c \"cat {0} >> {1}\"'.format(filename, outpath, replace))
+                cmd = '/bin/bash -c \"cat {0} >> {1}\"'.format(filename, outpath, replace)
+                print(cmd)
+                os.system(cmd)
         os.chdir(all_dir)
     # delete *all.csv files
     # for every category, commodity read files
@@ -818,8 +822,8 @@ def main(overwrite=True):
     #start = time.time()
     ### TODO: make this one function call?
     #combine_commodity_stats(data_dir)
-    selected_commodities = json.load(open(path.join(data_dir, 'commodities', 'selected_commodities.json'))) 
-    print(selected_commodities) 
+    selected_commodities = json.load(open(path.join(data_dir, 'commodities', 'selected_commodities.json')))
+    print(selected_commodities)
     for folder in folders:
         if path.isfile(folder):
             continue
