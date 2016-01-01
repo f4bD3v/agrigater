@@ -10,7 +10,7 @@ from optparse import OptionParser
 from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
-from os import path
+from os import path, remove
 
 usage_str = """
 This scripts downloads daily food prices from http://agmarknet.nic.in/cmm2_home.asp for a given commodity. Results are saved in CSV format to csv_out/ directory.
@@ -34,7 +34,6 @@ commodity = ''
 category = ''
 fs_category = ''
 
-
 def download_data(date_string):
     outdir = path.join(data_dir, 'by_date_and_commodity', fs_category)
     if not os.path.exists(outdir):
@@ -44,20 +43,20 @@ def download_data(date_string):
     outpath = path.join(outdir, outfile)
     #outpath = outpath.replace('(', '\(').replace(')', '\)')
     print(outpath)
-
-    if os.path.isfile(outpath):
-        return
+    if path.isfile(outpath):
+        remove(outpath)    
+    #    return
 
     """Download weekly prices in HTML and save them to file CSV"""
     url="http://agmarknet.nic.in/cmm2_home.asp?comm={0}&dt={1}".format(commodity.strip("\""), date_string)
     print(url)
     r = requests.get(url)
-    print(r.text)
     #response = urllib2.urlopen(req)
     #result_html = response.read()
     html_to_csv(outpath, date_string, commodity, r.text)
 
 def html_to_csv(outpath, date_string, commodity, html):
+    print('hello')
     # Remove some stuff
     html = re.sub(r'&nbsp;?', '', html)
     html = re.sub(r'</?font[^>]*>', '', html)
@@ -103,22 +102,34 @@ def html_to_csv(outpath, date_string, commodity, html):
     #print "### Output file:", out_file_name
     #outfile = open(outfile_name, "w")
     df = pd.DataFrame(all_rows)
+    print(df.head())
     # if the resulting frame is empty => do not save and move on
     if df.empty:
         return
     df = df.apply(lambda x: x.str.strip(), axis=1)
     ## add new columns
+    origin = df[3]
+    origin = origin.str.strip()
+    origin = origin.str.split('_', return_type='frame')
+    origin_state = origin[0].str.strip()
+    origin_market = origin[1].str.strip()
+    print(origin)
     df.drop(3, axis=1, inplace=True)
     # insert columns
     tonnage = df[2]
     df.drop(2, axis=1, inplace=True)
     ### price/kg conversion after removing tonnage
-    df = df.applymap(lambda x: float(x)/100 if x.isdigit() else x)
+    ### TODO: write method that divides every price series irrespective of digit or not
+    print(df.head())
+    df[[5,6,7]] = df[[5,6,7]].applymap(lambda x: float(x)/100 if x != 'NR' else x) # applymap(lambda x: float(x)/100 if x.isdigit() else x), isdigit does not work for decimals "985.5" (DID NOT REALIZE DECIMALS WERE ENTERED... IDIOT)
     #tonnage.replace(np.nan, '-', regex=True)
     df.insert(0, 'Date', date_string)
     df.insert(3, 'Commodity', commodity)
     # delete tonnage column
     df.insert(5, 'Tonnage', tonnage)
+    print(df.head())
+    df.insert(9, 'OriginState', origin_state)
+    df.insert(10, 'OriginMarket', origin_market)
     df.replace('^NR$', '*', regex=True, inplace=True)
     #df['Tonnage'] = df['Tonnage'].replace(np.nan, '*')
     #df['Tonnage'] = df['Tonnage'].str.replace('^$', np.nan)
@@ -127,11 +138,17 @@ def html_to_csv(outpath, date_string, commodity, html):
     df.replace('^\*$', np.nan, regex=True, inplace=True)
     #df.replace('*', np.nan, regex=True, inplace=True)
     df[4] = df[4].replace(',', ';')
+    print(category)
     df.insert(3, 'Category', category)
+    print(df.head())
     #df['Tonnage'] = df['Tonnage'].str.replace('^$', '-')
     ### pandas add column at specific index
     ### TODO: change this to pandas column operations!
     #print(df.head())
+    print(outpath)
+    df = df.where((pd.notnull(df)), None)
+    df.columns = ['Date', 'State', 'Market', 'Category', 'Commodity', 'Variety', 'Tonnage', 'Min', 'Max', 'Modal', 'OriginState', 'OriginMarket']
+    print(df.head()) 
     pd.DataFrame.to_csv(df, outpath, header=False, index=False, quotechar='"')
     return
     """

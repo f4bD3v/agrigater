@@ -1,0 +1,358 @@
+/* CSS declarations go here */
+html { 
+	height: 100%;
+}
+
+body {
+	height: 100%;	
+	margin: 0;
+	padding: 0;
+}
+
+#agrigater, #container, #map {
+	height: 100%;	
+}
+
+.map-layers-loading {
+    text-indent: -999em;
+    position: absolute;
+    top:45%;
+    left:45%;
+    width: 100px;
+    height: 100px;
+    background: url("images/arrows.gif") no-repeat center center;
+    z-index: 1000;
+}
+
+.mode-menu {
+    margin-left: 25%;
+}
+
+.compare {
+    width: 150px !important;
+    margin-top: 16px !important;
+}
+.leaflet-control-zoom-display {
+    background-color: #fff;
+}
+
+#series-interface {
+    width:80%;    
+    height:80%;
+    min-height: 500px;
+    position:absolute;
+    top:10%;
+    left:10%;
+    z-index: 1000;
+    background-color: #fff;
+}
+
+#seriesChart {
+    float: left;
+    height: 500px;
+    width: 75%;
+    min-width: 700px !important;
+}
+
+circle {
+    stroke: #ff6600 !important;
+}
+
+.overlay {
+    max-width: 90% !important;
+    min-width: 800px !important;
+}
+
+.add-form {
+    float: left;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.select-container {
+    float: left;
+    width: 200px;
+    margin: 5px;
+    padding: 0;
+}
+
+.toggle {
+    float: left;
+    margin: 10px 5px 5px 5px;
+    width: 120px !important;
+}
+
+.toggle label {
+    width: 70px !important;
+}
+
+.toggle input {
+    width: 120px !important;
+}
+
+.leaflet-bar a.leaflet-disabled, .leaflet-control-zoomhome-in, .leaflet-control-zoomhome-out {
+    line-height: 26px !important;
+}
+
+.leaflet-control-zoom-display {
+    padding-top: 0 !important;
+}
+
+.button-container {
+    float: left;
+}
+
+.last {
+    margin-right: 0;
+}
+
+.removalContainer {
+    float: left;
+    padding-left: 20px;
+    min-width: 250px !important;
+    width: 25%;
+}
+
+.delete-icon {
+    margin-top: -5px;
+    float: left;
+    width: 25px;
+    height: 25px;
+}
+
+.state-item {
+    border-right: 5px solid #ff6600 !important;
+}
+
+.district-item {
+    border-right: 5px solid #ffffbf !important;
+}
+
+.market-item {
+    border-right: 5px solid #91cf60 !important;
+}
+
+.leaflet-control-zoomhome a {
+    font: bold 18px "Lucida Console",Monaco,monospace;
+}
+
+/****** SLIDER STYLE ******/
+.date-overlay {
+    position: absolute;
+    width: 100%;
+    z-index: 6666;
+    bottom: 50px;
+    width: 100%;
+}
+
+.pickers {
+    position: absolute;
+    left: 10%;
+    bottom: 30px;
+    width: 250px !important;
+}
+
+.date-picker input {
+    color: #fff !important;
+    text-align: center;
+    width: 120px !important;
+    text-shadow: 1px 1px 1px rgba(0,0,0, .5) !important;
+    background-color: rgba(255,255,255, .4) !important;
+    padding: 10px !important;
+    height: auto !important;
+    border-radius: 5px;
+}
+
+.date-picker input:hover {
+    background-color: rgba(255,255,255, .6) !important;
+    text-shadow: 1px 1px 1px rgba(0,0,0, .7);
+}
+
+.date-picker hr {
+    width: 114px !important;
+    margin: 0 3px !important;
+    border-bottom: #acacac 1px solid #333 !important;
+    bottom: 4px !important;
+}
+
+.date-picker.start {
+    width: 120px !important;
+    float: left;
+    margin-right: 10px;
+    //margin-bottom: 10px;
+}
+
+.date-picker.end {
+    width: 120px !important;
+}
+
+#date-slider {
+    z-index: 6666;
+    width: 80%;
+    margin: 0 auto;
+}
+
+.noUi-connect {
+    background: #00bcd4 !important;
+}
+
+.noUi-target {
+    border: 0px !important;
+}
+
+.noUi-handle {
+    box-shadow: none !important;
+}
+
+.noUi-marker-large, .noUi-marker {
+    background: #fff !important;
+}
+
+.noUi-value {
+    color: #fff;
+}
+
+/*** INFO CONTROL ***/
+.info {
+    max-width: 400px;
+    padding: 5px 25px;
+    font: 14px/16px Arial, Helvetica, sans-serif;
+    background: white;
+    background: rgba(255,255,255,1);
+    box-shadow: 0px 1px 5px rgba(0,0,0,.4);
+    //border: 1px solid #d9d9d9;
+    border-radius: 5px;
+}
+.info h4 {
+    margin: 0 0 5px;
+    color: #777;
+}
+
+/*** BUBBLES ***/
+.bubble {
+  //fill: #ff0000;
+  fill: #91cf60;
+  fill-opacity: .5;
+  //opacity: .5;
+  stroke: #fff !important;
+  stroke-width: 1px;
+  stroke-opacity: .7 !important;
+}
+
+.bubble.active {
+    stroke-width: 2px;
+    stroke: #333 !important;    
+}
+
+.legend {
+    position: absolute;
+    bottom: 150px;
+    left: 10%;
+}
+
+.legend circle {
+  fill: none;
+  stroke: #fff !important;
+  box-shadow: 0 1px 1px rgba(0,0,0,.5);
+  stroke-width: 2px;
+}
+
+.legend text {
+  fill: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,.5);
+  font: 10px sans-serif;
+  text-anchor: middle;
+}
+
+.quality-controls-container {
+    position: absolute;
+    width: 350px;
+    right: 10%;
+    bottom: 80px;
+}
+
+.quality-controls {
+    position: absolute;
+    margin-right: -105px;
+    right: 0px;
+    bottom: 0px;
+    width: 250px;
+}
+
+.quality-controls .noUi-pips {
+    margin-left: 20px !important;
+    //text-shadow: 1px 1px 1px #000;
+}
+
+.meta-controls {
+    position: absolute;
+    margin-right: -100px;
+    width: 140px !important;
+    bottom: 0px;
+}
+
+.meta-controls button {
+    margin: 24px !important;
+}
+
+
+.quality-slider {
+    margin: 20px;
+    display: inline-block;
+    height: 200px; 
+    bottom: 0px;
+}
+
+.quality-dropdown {
+    background: #fff !important;
+    width: 250px !important;
+    border-radius: 5px;
+}
+
+.quality-dropdown:hover {
+    background: rgba(0,0,0, .1) !important;
+    width: 250px !important;
+    border-radius: 5px;
+}
+
+#coverage.noUi-connect {
+    background: #27ae60 !important;
+}
+
+#price-missing .noUi-connect {
+    background: #c0392b !important;
+}
+
+#tonnage-missing .noUi-connect {
+    background: #c0392b !important;
+}
+
+.info {
+    margin-top: 65px !important;
+}
+
+.style-agrigater .opentip {
+    padding: 5px !important;
+}
+
+.style-agrigater .ot-header h1 {
+    margin: 5px 0 !important;
+    color: #444 !important;
+    font-weight: bold;
+    padding: 0 !important;
+    font-size: 10pt !important;
+    text-transform: uppercase;
+}
+
+.style-agrigater .ot-content {
+    color: #444 !important;
+    font-size: 9pt !important;
+    padding: 0 !important;
+}
+/*
+#coverage {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    height: 200px;
+}*/

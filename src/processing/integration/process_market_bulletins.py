@@ -219,10 +219,10 @@ def clean(files, mode, commodity_corrections, commodity_name_mapping):
             num_col = len(bz.discover(csvr)[1].types)   
             print(num_col)
             ds = None
-            if num_col == 10:
-                ds = bz.dshape("var * {date: ?string, state: ?string, market: ?string, category: ?string, commodity: ?string, variety: ?string, arrival: ?float64, min: ?float64, max: ?float64, modal: ?float64}")
-            elif num_col == 11: 
-                ds = bz.dshape("var * {date: ?string, state: ?string, market: ?string, category: ?string, commodity: ?string, variety: ?string, arrival: ?float64, grade: ?string,  min: ?float64, max: ?float64, modal: ?float64}")
+            if num_col == 12:
+                ds = bz.dshape("var * {date: ?string, state: ?string, market: ?string, category: ?string, commodity: ?string, variety: ?string, arrival: ?float64, min: ?float64, max: ?float64, modal: ?float64, originState: ?string, originMarket: ?string}")
+            elif num_col == 13: 
+                ds = bz.dshape("var * {date: ?string, state: ?string, market: ?string, category: ?string, commodity: ?string, variety: ?string, arrival: ?float64, grade: ?string,  min: ?float64, max: ?float64, modal: ?float64, originState: ?string, originMarket: ?string}")
             else:
                 ds = bz.discover(csvr)
             d = bz.Data(filename, dshape=ds)
@@ -239,6 +239,10 @@ def clean(files, mode, commodity_corrections, commodity_name_mapping):
                 d = bz.transform(d, variety=d.variety.map(lambda x: commodity, 'string'))
 
             ### TODO: merge related filenames
+            # if price > 100: divide by 100
+            #d = bz.transform(d, min=d.min.map(lambda x: x/100 if x > 100 else x, 'float64'))
+            #d = bz.transform(d, max=d.max.map(lambda x: x/100 if x > 100 else x, 'float64'))
+            #d = bz.transform(d, max=d.modal.map(lambda x: x/100 if x > 100 else x, 'float64'))
 
             d = bz.transform(d, commodity=d.commodity.map(lambda x: commodity_corrections[x] if x in commodity_corrections else x, 'string'))
             d = bz.transform(d, commodityTranslated=d.commodity.map(lambda x: commodity_name_mapping[x] if x in commodity_name_mapping else x, 'string'))

@@ -28,15 +28,15 @@ def monary_retrieve(config, coll):
 
 ### TODO:
 #  http://stats.stackexchange.com/questions/144924/missing-data-and-imputation-in-general
-# Approach 1: discard all records that have missing commodityTonnage => compute aggregation => then dump database to csvs
+# Approach 1: discard all records that have missing commodityTonnage => compute aggregation => then dump database to csvs -- strike this
 # Approach 2: time-aware linear interpolation mixed with location aware mean => compute aggregation => dump database to csvs
 # Approach 3:
 # for state: fetch all markets with entries for a specific commodity
 # retrieve commodityTonnage series and outer join them into a series: this will introduce NAs for missing records, however, we only want to impute missing values
 # create such a dataframe and see what it looks like
 ## then find a clever way to do multiple imputation only for cells that are missing data and not part of a missing record
-def retrieve_markets():
-    db.fetch(find({ market: 1}
+#def retrieve_markets():
+#    db.fetch({ market: 1})
 
 def odo_retrieve(config, coll):
     start = time.time()
@@ -58,9 +58,6 @@ def main():
     print(df.head())
     df['commodityTonnage'] = df['commodityTonnage'].interpolate(method='time')
     print(df.head())
-    data/stats/all/commodity_tonnage_market_year-month.csv
-    data/stats/all/commodity_tonnage_district_year-month.csv
-    data/stats/all/commodity_tonnage_state_year-month.csv
 
 if __name__ == "__main__":
     main()

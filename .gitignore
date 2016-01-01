@@ -1,0 +1,5 @@
+.DS_STORE
+deprecated/
+data/
+app/packages/
+app/packages.*
