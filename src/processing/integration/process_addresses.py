@@ -22,8 +22,9 @@ import address_cleaner
 data_dir = '../../../data'
 admin_dict = {}
 
+# Remove Market Removal
 market_corrections = {
-   'Mkt.'  : '',
+   'Mkt.'  : ' Market ',
    'Market' : '',
    'Yard' : '',
    ',RBZ' : '',
@@ -33,11 +34,9 @@ market_corrections = {
    '(KA)' : '',
    ' Hqs' : '',
    '(main)' : '',
-   r'\s+' : ' ',
-   r' ,$' : '',
    # google geocoding was able to make this inference itself
    'V.Kota' : 'Venkatagirikota',
-   'Fish,Poultry & Egg , Gazipur' : 'Fish and Poultry Market, Gazipur',
+   'Fish,Poultry & Egg , Gazipur' : 'Poultry Market, Gazipur',
    'Udaipur\(F&V\)' : 'Vegetable Market, Udaipur'
 }
 
@@ -165,7 +164,8 @@ def main():
 
         # remove old version of Punchaipuliyampatti market
         state_market_df = state_market_df[(state_market_df.Market != 'Punchaipuliyampatti') | (state_market_df.Regulated == False)]
-        state_market_df = state_market_df.replace({ 'Market' : market_corrections}, regex=True) #, regex=True
+        state_market_df['Market'] = state_market_df['Market'].replace(market_corrections, regex=True)
+
         state_market_df['Market'] = state_market_df['Market'].str.strip()
         state = state_market_df['State'][0]
         #states = list(pos_df['State'].unique())
@@ -196,6 +196,14 @@ def main():
         index = address_df.index[address_df['District'].apply(pd.isnull)]
 
         full_df = pd.concat([state_market_df, address_df], axis=1)
+        # Problem: Grain)(Chandpole, Grain)(Mandor, Grain)(Phalodi
+        full_df = full_df.replace(r'\s\)', ')', regex=True)
+        full_df = full_df.replace(r'\(\)', '', regex=True)
+        full_df = full_df.replace(r'\s+', ' ', regex=True)
+        full_df = full_df.replace(r'\s+,\s*', ', ', regex=True)
+        full_df = full_df.replace(r'\s*,$', '', regex=True)
+        full_df['Market_Cleaned'] = full_df['Market_Cleaned'].str.strip()
+        full_df['Market'] = full_df['Market'].str.strip()
         no_district = full_df.ix[index][['APMC Address', 'Secretary Address', 'District', 'Taluk', 'Pin']]
         ### need to delete balrampur market duplicate here already
         pd.DataFrame.to_csv(no_district, path.splitext(state_market_file)[0]+'_localized_unassigned.csv')

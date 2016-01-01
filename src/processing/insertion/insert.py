@@ -186,8 +186,8 @@ def insert_commodities(df, mongo_str, batch=False):
         to_strip = '_localized.csv'
     for cat, comm_list in selected_commodities.items():
         ### NOTE: following is just for testing
-        #if cat != 'Cereals':
-        #    continue
+        if cat != 'Cereals':
+            continue
         cat_folder = name_to_fs(cat).replace('-', '_')
         src_folder = path.join(agmarknet_dir, cat_folder, 'integrated')
         os.chdir(src_folder)
@@ -206,8 +206,9 @@ def insert_commodities(df, mongo_str, batch=False):
         for filename in selected_files:
             print(filename)
             coll = filename.replace(to_strip, '')
+            coll = coll.replace('-', '.')
             coll = coll.lower()
-            coll = 'market_'+coll+'_varieties'
+            coll = 'market.'+coll+'.varieties'
             print(coll)
             print('Inserting {0} into collection \"{1}\"..'.format(filename, coll))
             target = mongo_str+coll
@@ -248,6 +249,22 @@ def insert_districts(db):
     # read .../data/integrated/admin/districts.json
     return
 
+def insert_district_topology(db):
+    in_dir = path.join(data_dir, 'integrated', 'admin', 'districts_by_state')
+    files = os.listdir(in_dir)
+    for filename in files:
+        # state, district, _id
+        topo = json.load(open(path.join(in_dir, filename), 'r'))
+        fid = filename.replace('.json', '')
+        props = topo['objects'][fid]['geometries'][0]['properties']
+        doc = {
+           'state' : props['state'],
+           'topology' : topo
+        }
+        print(doc)
+        db.insert('state.district.topologies', doc)
+    return
+
 ### FIRST, INSERT states, districts ==> object ids in markets
 def insert_markets(db, logger):
     curr_dir = os.getcwd()
@@ -281,6 +298,9 @@ def main(op, op_type):
     elif op == 'states':
         insert_states(db)
     elif op == 'districts':
+        if op_type == 'topology':
+            insert_district_topology(db)
+            return
         insert_districts(db)
     elif op == 'markets':
         insert_markets(db, logger)

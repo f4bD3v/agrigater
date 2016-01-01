@@ -1,2 +1,2 @@
 # agrigater
-visualization and forecasting system for Indian agricultural data
+visualization of [and forecasting system for] Indian agricultural data
