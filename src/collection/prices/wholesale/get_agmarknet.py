@@ -110,7 +110,7 @@ def html_to_csv(outpath, date_string, commodity, html):
     ## add new columns
     origin = df[3]
     origin = origin.str.strip()
-    origin = origin.str.split('_', return_type='frame')
+    origin = origin.str.split('_', expand=True)
     origin_state = origin[0].str.strip()
     origin_market = origin[1].str.strip()
     print(origin)
