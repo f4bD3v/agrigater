@@ -108,13 +108,13 @@ def main(replace):
                 df = df.replace('*', np.nan)
                 coordinate_df = df.apply(add_coordinates, axis=1, args=[logger])
                 os.chdir(curr_dir)
-                coordinate_df.to_csv(path.join(outdir, outfile), index_col=None)
+                coordinate_df.to_csv(path.join(outdir, outfile), index=False)
                 os.chdir(src_dir)
                 time.sleep(180)
                 coordinate_dfs.append(coordinate_df)
         os.chdir(curr_dir)
         coordinate_df = pd.concat(coordinate_dfs)
-        pd.DataFrame.to_csv(coordinate_df, path.join(outdir, 'market_coordinates.csv'))
+        pd.DataFrame.to_csv(coordinate_df, path.join(outdir, 'market_coordinates.csv'), index=False)
         return
 
 if __name__ == "__main__":

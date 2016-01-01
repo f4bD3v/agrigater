@@ -1,9 +1,11 @@
+import sys
 import os
 from os import path
 import glob
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+mpl.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -23,7 +25,7 @@ def custom_bar_plot():
 def custom_line_plot():
     return
 
-"""   
+"""
     Automate population of subplots:
 http://stackoverflow.com/questions/24828771/automate-the-populating-of-subplots
     Rotate labels:
@@ -47,7 +49,6 @@ def chunks(l, n):
 
 ### TODO: add column to be plotted on y axis?
 def page_barplots(xlabel, ylabels, stype, title, page_id, chunk, pdf):
-    print(xlabel, ylabels)
     chunk_len = len(chunk)
     fig, axes = plt.subplots(nrows=3, ncols=2, dpi=100)
     sns.despine(fig)
@@ -56,12 +57,12 @@ def page_barplots(xlabel, ylabels, stype, title, page_id, chunk, pdf):
     #fig.suptitle(title + ', page '+str(page_id))
     # use commodity, "arrival" as figure title
     axes = np.array(axes.flat)
-    plot_tuples = zip(chunk, axes[0:chunk_len]) 
+    plot_tuples = zip(chunk, axes[0:chunk_len])
     for (idx, group), ax in plot_tuples:
         df = remove_group_idx(group)
         df = complete_df(df, xlabel)
         if len(ylabels) > 1:
-            df = tidy_df(df, xlabel, ylabels, stype) 
+            df = tidy_df(df, xlabel, ylabels, stype)
             sns.barplot(x=xlabel, y='value', hue=stype, data=df, ax=ax)
         else:
             sns.barplot(x=xlabel, y=ylabels[0], data=df, ax=ax)
@@ -72,10 +73,11 @@ def page_barplots(xlabel, ylabels, stype, title, page_id, chunk, pdf):
         #ax.xaxis.set_minor_locator(mondays)
 
     ### remove unused axes
-    for ax in axes[chunk_len:]: 
+    for ax in axes[chunk_len:]:
         ax.axis('off')
     fig.tight_layout()
     pdf.savefig()
+    plt.close()
     # save to pdf with custom save function
     return
 
@@ -89,7 +91,6 @@ def get_plot_filename(filename, props, ext):
     admin = props.pop('admin', [])
     subpath = ''
     folders = list(filter(None, [stype, atype])) + admin
-    print(folders)
     if folders:
         subpath = path.join(*folders)
         check = path.join(outpath, subpath)
@@ -98,8 +99,7 @@ def get_plot_filename(filename, props, ext):
     props = list(props.values()) + [admin]
     props = list(filter(None, props))
     props = [item if isinstance(item, list) else item for item in props]
-    print('props', props)
-    if props: 
+    if props:
         props = ['-'.join(item) if isinstance(item, list) else item for item in props]
     else:
         return path.join(subpath, filename+'.'+ext)
@@ -112,7 +112,7 @@ def get_plot_filename(filename, props, ext):
 
 def remove_group_idx(df):
     if df.index.name:
-        idx_name = df.index.name 
+        idx_name = df.index.name
         df.reset_index(inplace=True)
         df.drop(idx_name, inplace=True)
     return df
@@ -130,22 +130,19 @@ def complete_df(df, xlabel):
     else:
         print('Unknown xlabel', xlabel)
     return complete_df
-    
+
 def tidy_df(df, xlabel, ylabels, stype):
     #print('WARNING: df does not have an index name', df.head())
     tidy_df = pd.melt(df, id_vars=xlabel, value_vars=ylabels, var_name=stype)
-    print(tidy_df.head())
     return tidy_df
 
 ### TODO: for Beverages month 10 has a huge column: find anomaly
 def simple_barplot(xlabel, ylabels, stype, df, filename, exts):
     ## how to have multiple y values? pass list?
-    print(xlabel, ylabels)
     fig = plt.figure()
     df = complete_df(df, xlabel)
     if len(ylabels) > 1:
-        df = tidy_df(df, xlabel, ylabels, stype) 
-        print(df.head())
+        df = tidy_df(df, xlabel, ylabels, stype)
         barplot = sns.barplot(x=xlabel, y='value', hue=stype, data=df)
     else:
         barplot = sns.barplot(x=xlabel, y=ylabels[0], data=df)
@@ -153,6 +150,7 @@ def simple_barplot(xlabel, ylabels, stype, df, filename, exts):
     ### TODO: call complete_df() and tidy_df()
     for ext in exts:
         save_plot(fig, outpath, filename, '.'+ext)
+    plt.close()
     return
 
 def longitudinal_plot(df, group_cols, filename, props, ext='pdf'):
@@ -160,23 +158,20 @@ def longitudinal_plot(df, group_cols, filename, props, ext='pdf'):
     #df = pd.DataFrame.from_csv(filename, index_col = None)
     ### BAR PLOT HAS AS X-AXIS THE TIME COL THAT WAS NOT GROUPED BY
     grouped = df.groupby(group_cols)
-    print(filename)
-    print(group_cols)
-    print(props)
     xlabel = props.pop('xlabel', None)
     ylabels = props.pop('ylabels', None)
-    print(ylabels)
     stype = props['stype']
-    plot_chunks = chunks(list(grouped), 6)
+    plot_chunks = list(chunks(list(grouped), 6))
+    print('Number of chunks:', len(plot_chunks))
     ### TODO: append props info to filename?
     title = ' '.join(filename.split('_'))
     outfile = get_plot_filename(filename, props, ext)
-    print(outfile)
     page_id = 1
     # need group by for those files that contain level
     with sns.axes_style('ticks'):
         with PdfPages(path.join(outpath, outfile)) as pdf:
             for chunk in plot_chunks:
+                print('Number (=6?) of elements in chunk:', len(chunk))
                 page_barplots(xlabel, ylabels, stype, title, page_id, chunk, pdf)
                 page_id+=1
     return
@@ -229,7 +224,7 @@ def plot_by_time(stype, aggr_lvl, time_cols, filename, df=pd.DataFrame(), comm=N
         properties = dict(props)
         longitudinal_plot(df, ['year'], filename, properties)
     elif col_len == 1:
-        xlabel = 'month'
+        xlabel = time_cols[0]
         simple_barplot(xlabel, ylabels, stype, df, filename, ['png', 'pdf'])
         ### TODO: longitudinal plot vs other options: pdf of totals for all states, all districts in a state, pdf of single plots for commodities in a category
         #single_barplot(filename) if aggr_lvl == 'total' else longitudinal_plot(filename, time_cols, aggr_lvl)
@@ -245,7 +240,6 @@ def plot_by_lvl(stype, aggr_lvl, admin_lvl, time_cols, filename, df=pd.DataFrame
     ### NOTE: sure this is a longitudinal plot with level as group_col???
     if df.empty:
         print('No commodity group given to plot! Reading dataframe from: {}'.format(filename))
-        print(admin_lvl, time_cols)
         df = pd.DataFrame.from_csv(filename, index_col = None)
     df = prepare_data(stype, df)
     ylabels = get_ylabels(stype)
@@ -264,19 +258,19 @@ def plot_by_lvl(stype, aggr_lvl, admin_lvl, time_cols, filename, df=pd.DataFrame
         ### month on xlabel, one subplot of state or [state, district] per year
         grouped = df.groupby(admin_lvl)
         for admin_unit, group in grouped:
-            print('Preparing longitudinal plot for:\n', admin_unit, 'years')
+            print('Preparing longitudinal plot for: ', admin_unit, 'years')
             if isinstance(admin_unit, tuple):
                 admin_unit = list(admin_unit)
             props['admin'] = [admin_unit]
             props['xlabel'] = 'month'
             properties = dict(props)
-            longitudinal_plot(group, ['year'], filename, properties) 
+            longitudinal_plot(group, ['year'], filename, properties)
     elif len(admin_lvl) > 1:
         ## month or year => xlabel, one subplot by district
         # first group by state and then group by district in longitudincal plot
         grouped = df.groupby('state')
-        for state, group in grouped: 
-            print('Preparing longitudinal plot for:\n', state, 'districts')
+        for state, group in grouped:
+            print('Preparing longitudinal plot for: ', state, 'districts')
             props['admin'] = [state, 'districts']
             props['xlabel'] = time_cols[0]
             properties = dict(props)
@@ -288,8 +282,9 @@ def plot_by_lvl(stype, aggr_lvl, admin_lvl, time_cols, filename, df=pd.DataFrame
         #props['admin'] = admin_lvl
         props['xlabel'] = time_cols[0]
         properties = dict(props)
+        print('properties of states plot:', properties)
         longitudinal_plot(df, admin_lvl, filename, properties)
-    return 
+    return
 
 def plot_by_commodity(stype, aggr_lvl, admin_lvl, time_cols, filename):
     ### TODO: CREATE OUTFILE NAME HERE AND PASS ALONG
@@ -302,7 +297,7 @@ def plot_by_commodity(stype, aggr_lvl, admin_lvl, time_cols, filename):
         for comm, comm_group in commodity_grouped:
             ### TODO: need to pass group_col?
             if admin_lvl:
-                plot_by_lvl(stype, aggr_lvl, admin_lvl, time_cols, filename, comm_group, comm) 
+                plot_by_lvl(stype, aggr_lvl, admin_lvl, time_cols, filename, comm_group, comm)
             else:
                 plot_by_time(stype, aggr_lvl, time_cols, filename, comm_group, comm)
     else:
@@ -313,16 +308,17 @@ def plot_by_commodity(stype, aggr_lvl, admin_lvl, time_cols, filename):
             # by state, district
             commodity_grouped = df.groupby('commodity')
             for comm, comm_group in commodity_grouped:
-                plot_by_lvl(stype, aggr_lvl, admin_lvl, time_cols, filename, comm_group, comm) 
+                print('Preparing longitudinal plot for:', admin_lvl, comm)
+                plot_by_lvl(stype, aggr_lvl, admin_lvl, time_cols, filename, comm_group, comm)
         else:
             df = prepare_data(stype, df)
             category_grouped = df.groupby('category')
             filename = filename.replace('.csv', '')
             for cat, cat_group in category_grouped:
                 # how to pass commodity group to these functions
-                print(cat, cat_group)
                 ### TODO: nonono, pass commodity as group col
                 ### CALL Longitdunial plot directly?
+                print('Preparing longitudinal plot for:', time_cols, cat)
                 props = {
                     'stype' : stype,
                     'aggrlvl' : aggr_lvl,
@@ -345,18 +341,16 @@ def get_cols_from_fn(filename):
     else:
         return (to_flatten[0], to_flatten[1])
 
-### TODO: need inverse dictionary for commodity category lookup        
+### TODO: need inverse dictionary for commodity category lookup
 def plot_aggr_lvl_handler(files, aggr_lvl, stype):
     #count = 3
     for filename in files:
         #if count < 1:
         #    continue
-        admin_lvl_cols, time_cols = get_cols_from_fn(filename) 
-        print(admin_lvl_cols, time_cols)
+        admin_lvl_cols, time_cols = get_cols_from_fn(filename)
         ### TODO; if 'commodity' aggr_lvl simply pass this variable to extend code in plot wrapper (the plot function does not care what it's plotting)
         if admin_lvl_cols:
             ### TODO: longitudinal plot vs other options: pdf of totals for all states, all districts in a state
-            print('inside admin_lvl_cols')
             if aggr_lvl == 'total':
                 plot_by_lvl(stype, aggr_lvl, admin_lvl_cols, time_cols, filename)
             elif aggr_lvl == 'commodity':
@@ -371,7 +365,7 @@ def plot_aggr_lvl_handler(files, aggr_lvl, stype):
             if aggr_lvl == 'total':
                 plot_by_time(stype, aggr_lvl, time_cols, filename)
             elif aggr_lvl == 'commodity':
-                plot_by_commodity(stype, aggr_lvl, None, time_cols, filename)    
+                plot_by_commodity(stype, aggr_lvl, None, time_cols, filename)
             else:
                 print('Wrong aggregation level: ', aggr_lvl)
         #count = count - 1
@@ -381,11 +375,12 @@ def plot_aggr_lvl_handler(files, aggr_lvl, stype):
 
 def get_files_by_aggr_type(ftype):
     files = glob.glob('*{}*.csv'.format(ftype))
-    print('files by type {}:\n'.format(ftype), files)
+    print('files by type {}:'.format(ftype), files)
     return files
 
 def filter_files_on_aggr_lvl(files, aggr_lvl):
     files = list(filter(lambda x: aggr_lvl in x, files))
+    print('files by by aggregation level {}:'.format(aggr_lvl), files)
     return files
 
 def plot_type_handler(stype):
@@ -393,27 +388,32 @@ def plot_type_handler(stype):
     ### now split by total vs commodity
     total_files = filter_files_on_aggr_lvl(type_files, 'total')
     comm_files = filter_files_on_aggr_lvl(type_files, 'commodity')
-    print(total_files, comm_files)
 
     ### pass some information of how to adopt plot according to plot_type (nas, coverage, arrivals) if at all necessary and not handled automatically
-    plot_aggr_lvl_handler(total_files, 'total', stype) 
+    plot_aggr_lvl_handler(total_files, 'total', stype)
     plot_aggr_lvl_handler(comm_files, 'commodity', stype)
     return
 
-def main():
+def main(stype):
     #data_dir = '../../data'
     #os.chdir(data_dir)
     #data_dir = os.getcwd()
     stats_dir = path.join(data_dir, 'stats', 'all')
     os.chdir(stats_dir)
 
-    plot_type_handler('tonnage')
-    plot_type_handler('nas')
-    plot_type_handler('coverage')
+    print('Plotting {} stats'.format(stype))
+    plot_type_handler(stype)
+    #plot_type_handler('tonnage')
+    #plot_type_handler('nas')
+    #plot_type_handler('coverage')
+
     return
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] in ['tonnage', 'nas', 'coverage']:
+        main(*sys.argv[1:])
+    else:
+        print('Usage {} (tonnage|nas|coverage)'.format(sys.argv[0]))
 
 # plot vs multiplot
 
@@ -423,7 +423,7 @@ if __name__ == "__main__":
 # {year} => one plot
 # {month} => one plot
 # {commodity, year} => commodity plots for all years
-# {commodity, month} => 
+# {commodity, month} =>
 # {commodity, level, {month, year}} => longitudinal plot
 ### for different commodities: plot coverage by year, month
 ### for different commodities: plot coverage by state, district, market
