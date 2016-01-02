@@ -111,6 +111,9 @@ def html_to_csv(outpath, date_string, commodity, html):
     origin = df[3]
     origin = origin.str.strip()
     origin = origin.str.split('_', expand=True)
+    if origin.shape[1] == 1:
+        origin=pd.concat([origin, origin], axis=1)
+        origin.columns = [0,1]
     origin_state = origin[0].str.strip()
     origin_market = origin[1].str.strip()
     print(origin)

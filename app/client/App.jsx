@@ -465,7 +465,7 @@ App = React.createClass({
         <VisModeControls onSelect={this._handleUserMenuSelection} onCheck={this._switchComparison} setVisType={this._handleVisChange} checkbox={compare} />
         <CommodityControls ref="commControl" open={this.state.showNav} loading={this.data.commoditiesLoading} commodities={this.data.commodities} visMode={this.state.visMode} handleHide={this._handleNavHide} handleSelection={this._handleCommoditySelection} />
         { loading }
-        <Map ref="map" layers={this.data.layers} districtLayer={this.data.districtLayer} visMode={this.state.visMode} commodity={this.state.commodity} comparison={this.state.comparison} updateSelection={this._updateSelection} selection={selection} unitData={this.data.unitData} unitDataLoading={this.data.unitDataLoading} markets={this.state.markets} marketData={this.data.marketData} marketDataLoading={this.data.marketDataLoading} adminUnit={this.state.adminUnit} unitName={this.state.unitName} onClick={this._handleMapClick} onReset={this._handleResetZoom} />
+        <Map ref="map" navOpen={this.state.showNav} layers={this.data.layers} districtLayer={this.data.districtLayer} visMode={this.state.visMode} commodity={this.state.commodity} comparison={this.state.comparison} updateSelection={this._updateSelection} selection={selection} unitData={this.data.unitData} unitDataLoading={this.data.unitDataLoading} markets={this.state.markets} marketData={this.data.marketData} marketDataLoading={this.data.marketDataLoading} adminUnit={this.state.adminUnit} unitName={this.state.unitName} onClick={this._handleMapClick} onReset={this._handleResetZoom} />
         { seriesInterface }
         { prompt }
         { rangeSlider }

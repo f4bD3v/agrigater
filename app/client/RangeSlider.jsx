@@ -197,11 +197,15 @@ RangeSlider = React.createClass({
                         formatDate={this._formatDate}
                         style={{ zIndex: 9999 }}
                         hintText="Range Start Date"
+                        minDate={new Date(2005, 1, 1).getTime()}
+                        maxDate={this.state.rangeStart}
                         onChange={this._handleStartPickerChange} />
                     <DatePicker ref="endPicker" className="date-picker end"
                         formatDate={this._formatDate}
                         style={{ zIndex: 9999 }}
                         hintText="Range End Date"
+                        minDate={this.state.rangeEnd} 
+                        maxDate={new Date(2015, 9, 1).getTime()}
                         onChange={this._handleEndPickerChange} />
                 </div>
                 <div id="date-slider" />

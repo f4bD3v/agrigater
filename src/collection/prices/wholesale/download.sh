@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# update: call for only "$YEST"
 function callscript {
     python get_agmarknet.py -r $START "$YEST" -f "\"$1\"" -c "\"$2\""
 }

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function callscript {
-    python get_agmarknet.py -r "$START" "$YEST" -f "$1" -c "$2"
+    python get_agmarknet.py -r "$START" "$YEST" -f "\"$1\"" -c "\"$2\""
 }
 
 function processtype {
@@ -22,7 +22,7 @@ while read line; do
     if [[ -z $line ]]; then continue;
     else
         if [[ $line =~ ^\# ]]; then TYPE=`processtype $line`;
-        else callscript $TYPE $line; fi
+        else callscript $TYPE "$line"; fi
     fi
 done < "$1"
 

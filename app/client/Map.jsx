@@ -838,6 +838,10 @@ Map = React.createClass({
       }
     });
     $(layer).fixClick(function(e) {
+      if (self.props.navOpen) {
+        if (e.preventDefault) e.preventDefault();
+        return;
+      }
       console.log('shiftKey');
       console.log(e);
       console.log(e.originalEvent);
@@ -866,6 +870,10 @@ Map = React.createClass({
         self.props.onClick(feature.properties, false);
       }
     }, function(e) {
+      if (self.props.navOpen) {
+        if (e.preventDefault) e.preventDefault();
+        return;
+      }
       // => query for district borders within states
       // TODO: if this.state.zoomed disable click events for which targets are not in state
       var targetLayer = e.target;
