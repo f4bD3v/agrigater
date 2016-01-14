@@ -68,7 +68,7 @@ def get_state_census():
 	return
 
 ### TODO: differentiate between bulk and online insert
-def prepare_fca():	
+def prepare_fca():
 	"""
 	fca_dir = path.join(data_dir, 'fca/csv')
 	init_dir = os.getcwd()
@@ -76,7 +76,7 @@ def prepare_fca():
 	files = glob.glob('*.csv')
 	for file in files:
 		type decide if Retail or Whole
-		df = pd.DataFrame.from_csv(file, index_col = None)	
+		df = pd.DataFrame.from_csv(file, index_col = None)
 		fca_dict = {
 			centre: centre_name,
 			location: coordinates,
@@ -112,7 +112,7 @@ def add_location(row, market_locations):
 		taluk = market_locations[index]['Market']
 
 	# TODO: WHEN MARKET NOT IN MARKET LOCATIONS?
-	# check if market can be found in market collection. 
+	# check if market can be found in market collection.
 	# --> If not, insert basic version with only market and state name fields filled
 
 	# else add nan values - except for state (district aggregation still possible)
@@ -164,14 +164,14 @@ def prepare_commodities(market_locations, mode, overwrite):
 			if os.path.isfile(outpath):
 				if overwrite:
 					os.remove(outpath)
-				else:	
+				else:
 					print('Skipping {} ..'.format(outpath))
 					continue
 			print('Loading {} ..'.format(filename))
-			header = 0 
+			header = 0
 			if mode == 'online':
 				header = False ### TODO: HOW WILL THIS WORK?
-			df = pd.DataFrame.from_csv(filename, index_col=None, header=header)	
+			df = pd.DataFrame.from_csv(filename, index_col=None, header=header)
 			#df.columns = ['date', 'state', 'market', 'commodity', 'variety', 'weight', 'min', 'max', 'modal']
 			# NOTE: assigning header not necessary, since contained in cleaned csv
 			print('Adding location ..')
@@ -248,7 +248,7 @@ def prepare_states(locs):
 		districts = list(locs[state].keys())
 		### USE '_id' here directly instead of NAME?
 		state_dict = {
-			### put postodes statename with 
+			### put postodes statename with
 			'_id' : state,
 			'name' : state,
 			'state' : state,
@@ -311,7 +311,7 @@ def prepare_districts(locs):
 			census_dict = get_dist_census(census, dist, state)
 			### ADD taluks at later stage if cleaning works out properly?
 			### to be seen: "None maps intuitively to MongoDB types when using pymongo"
-			### NOTE: do not insert shapes, json is directly sent to client to be displayed, 
+			### NOTE: do not insert shapes, json is directly sent to client to be displayed,
 			# db contains data to be fetched on request
 			### TODO: WHAT IF WE WANT TO ADD SHAPES TO SUPPORT GEOSPATIAL QUERIES:
 			### What use cases would require geospatial queries
@@ -321,7 +321,7 @@ def prepare_districts(locs):
 				shape = shapes[dist]
 			else:
 				print(dist)
-			"""	
+			"""
 			dist_dict = {
 				### put postcodes district name with census_dict
 				'name' : dist,
@@ -429,7 +429,7 @@ def match_topo_dist_names(locs, state_match_dict, db):
 		dist_shape_dict = {}
 		mod_shapes = []
 		for state in list(locs.keys()):
-			### get only state specific properties (state correction lookup) 
+			### get only state specific properties (state correction lookup)
 			print(state)
 			print(state_match_dict[state])
 			#geo_list_by_state = list(map(lambda x: x["properties"], features))
@@ -512,7 +512,7 @@ def match_topo_dist_names(locs, state_match_dict, db):
 						for dist in dists:
 							if pylev.levenshtein(alt_name.lower(), dist.lower()) <= 5:
 								dist_cands.append(dist)
-					if dist_cands: 
+					if dist_cands:
 						mlist = list(map(lambda x: (x, ngram.NGram.compare(x.lower(), name.lower())), dist_cands))
 						mlist.sort(key=lambda x: x[1], reverse=True)
 						mdist = mlist[0][0]
@@ -549,8 +549,8 @@ def prepare_topology(locs, db):
 	## put 'id' field under 'geometries' alongside 'properties' dict
 	### => prepare_state_topology()
 	### => prepare_district_topology()
-	state_match_dict, state_topology = match_topo_state_names(locs, db)	
-	dist_match_dict, dist_topology = match_topo_dist_names(locs, state_match_dict, db)	
+	state_match_dict, state_topology = match_topo_state_names(locs, db)
+	dist_match_dict, dist_topology = match_topo_dist_names(locs, state_match_dict, db)
 
 	json.dump(state_topology, open(path.join(data_dir, 'integrated', 'admin', 'states.json'), 'w'))
 	#with open(path.join(data_dir, 'integrated', 'admin', 'districts.json'), 'w') as f:
@@ -559,12 +559,12 @@ def prepare_topology(locs, db):
 
 	prepare_market_features(db)
 	### TODO: fetch('districts|markets', {}, False)
-	#state_match_dict, state_shape_dict = match_topo_state_names(locs)	
-	#dist_match_dict, dist_shape_dict = match_topo_dist_names(locs, state_match_dict)	
+	#state_match_dict, state_shape_dict = match_topo_state_names(locs)
+	#dist_match_dict, dist_shape_dict = match_topo_dist_names(locs, state_match_dict)
 	#json.dump(state_shape_dict, open(path.join(data_dir, 'integrated', 'admin', 'states.geojson'), 'w'))
 	#json.dump(dist_shape_dict, open(path.join(data_dir, 'integrated', 'admin', 'districts.geojson'), 'w'))
 	### Use state match dict to find district match
-	return 
+	return
 
 def create_market_doc(row, logger, state_coords_df):
 	established = row['Established (Year)']
@@ -594,7 +594,7 @@ def create_market_doc(row, logger, state_coords_df):
 	print(row["Market_Cleaned"], row["Market"])
 	print(row['State'])
 	print(coords_row)
-	coords_row = coords_row.iloc[0, :]	
+	coords_row = coords_row.iloc[0, :]
 	print(coords_row)
 	print(coords_row['Lat'])
 	coordinates = {
@@ -603,7 +603,7 @@ def create_market_doc(row, logger, state_coords_df):
 	}
 	### TODO: put market cleaned
 	market_dict = {
-		'name' : row['Market'],	
+		'name' : row['Market'],
 		'market' : row['Market'],
 		'state': row['State'],
 		'district' : row['District'],
@@ -613,7 +613,7 @@ def create_market_doc(row, logger, state_coords_df):
 		'num_commodities_regulated': row['# Regulated Commodities'],
 		'cleaning_or_grading': row['Cleaning/Grading'],
 		'num_coldstorage': row['# Cold Storage Facilities'],
-		'address' : { 
+		'address' : {
 			'pin' : pin,
 			'apmc_address' : row['APMC Address'],
 			'apmc_secretary_address': row['Secretary Address']
@@ -689,7 +689,7 @@ def prepare_markets(cont = False):
 		with open(outpath, 'w') as f:
 			f.write(marketjson)
 			f.close()
-	### use market profiles that have gone through address assignment 
+	### use market profiles that have gone through address assignment
 	os.chdir(curr_dir)
 	return
 
@@ -716,7 +716,7 @@ def prepare_market_features(db):
 				'taluk': 'null' if isinstance(market['taluk'], float) else market['taluk'],
 				'regulated': market['regulated'],
 				'established': 'null' if isinstance(market['established'], float) else market['established']
-		  	}	
+		  	}
 		}
 		print(type(market['taluk']))
 		print(market['taluk'])
@@ -736,13 +736,13 @@ def match_crop(prod_crop_names):
 	return correction_dict
 
 def prepare_production(db):
-	### TODO: again need to integrate districts	
-	##df = pd.DataFrame.from_csv(path.join(data_dir, folder, file), index_col = None, header=None)	
+	### TODO: again need to integrate districts
+	##df = pd.DataFrame.from_csv(path.join(data_dir, folder, file), index_col = None, header=None)
 	### TODO: no grouping here, just json, state integration, district integration, crop integration
 	#prod_crops = list(df['Crop'].unique())
 	### TODO: WRITE DAT CODE
-	### state > district > crop > year > total (kharif, rabi, summer, winter, etc.)	
-	### TODO: make sure crop names match with crop names 
+	### state > district > crop > year > total (kharif, rabi, summer, winter, etc.)
+	### TODO: make sure crop names match with crop names
 	return
 
 def main(call, overwrite=False, mode=False):

@@ -1,0 +1,4 @@
+process_bulletins merge
+process_bulletins extract batch
+process_bulletins clean batch
+prepare_data integrate batch

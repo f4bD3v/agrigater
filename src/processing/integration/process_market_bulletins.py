@@ -132,12 +132,12 @@ def extract_dicts(folder, files, commodity_dict, category_dict, market_commodity
         # commodity = filename.split('_')[0]
         # Have to use resource to discover URIs
         csvr = bz.resource(filename)
-        num_col = len(bz.discover(csvr)[1].types)   
+        num_col = len(bz.discover(csvr)[1].types)
         ds = None
         if num_col == 10:
             ### TODO: dates are being misinterpreted: datetime => date?
             ds = bz.dshape("var * {date: datetime, state: ?string, market: ?string, category: ?string, commodity: ?string, variety: ?string, arrival: ?float64, min: ?float64, max: ?float64, modal: ?float64}")
-        elif num_col == 11: 
+        elif num_col == 11:
             ds = bz.dshape("var * {date: datetime, state: ?string, market: ?string, category: ?string, commodity: ?string, variety: ?string, arrival: ?float64, grade: ?string, min: ?float64, max: ?float64, modal: ?float64}")
         else:
             ds = bz.discover(csvr)
@@ -194,7 +194,7 @@ def extract_dicts(folder, files, commodity_dict, category_dict, market_commodity
         commodity_dict[commodity]['markets'] = list(set(commodity_dict[commodity]['markets']))
 
         # market_commodity_dict needs group by or split operation?
-        # simply extract a unique set of market names, loop over it and append commodity + 
+        # simply extract a unique set of market names, loop over it and append commodity +
         for market in markets:
             if not market in market_commodity_dict:
                 market_commodity_dict[market] = [commodity]
@@ -216,17 +216,17 @@ def clean(files, mode, commodity_corrections, commodity_name_mapping):
             #filename = '{}_stacked.csv'.format(commodity)
             # Have to use resource to discover URIs
             csvr = bz.resource(filename)
-            num_col = len(bz.discover(csvr)[1].types)   
+            num_col = len(bz.discover(csvr)[1].types)
             print(num_col)
             ds = None
             if num_col == 12:
                 ds = bz.dshape("var * {date: ?string, state: ?string, market: ?string, category: ?string, commodity: ?string, variety: ?string, arrival: ?float64, min: ?float64, max: ?float64, modal: ?float64, originState: ?string, originMarket: ?string}")
-            elif num_col == 13: 
-                ds = bz.dshape("var * {date: ?string, state: ?string, market: ?string, category: ?string, commodity: ?string, variety: ?string, arrival: ?float64, grade: ?string,  min: ?float64, max: ?float64, modal: ?float64, originState: ?string, originMarket: ?string}")
+            elif num_col == 13:
+                ds = bz.dshape("var * {date: ?string, state: ?string, market: ?string, category: ?string, commodity: ?string, variety: ?string, arrival: ?float64, grade: ?string,  min: ?float64, max: ?float64, originState: ?string, originMarket: ?string, modal: ?float64 }")
             else:
                 ds = bz.discover(csvr)
             d = bz.Data(filename, dshape=ds)
-            ### Use Dask if Data loads index_col and/or header: 
+            ### Use Dask if Data loads index_col and/or header:
             # http://stackoverflow.com/questions/32716093/how-do-i-read-tabulator-separated-csv-in-blaze
             ### Fixes issue with two added months on date
             d = bz.transform(d, date=d.date.map(lambda x: datetime.strptime(x, '%d/%m/%Y').date(), 'date'))
@@ -264,7 +264,7 @@ def clean(files, mode, commodity_corrections, commodity_name_mapping):
             # df = pd.DataFrame.from_csv('cleaned/Tea_stacked_cleaned.csv', header=False, index_col=None)
             # df['year'] = df['date'].apply(lambda x: datetime.strptime(x, "%d/%m/%Y").year)
             # df['month'] = df['date'].apply(lambda x: datetime.strptime(x, "%d/%m/%Y").month)
-            
+
             # os.remove(filename)
     else:
         for filename in files:
@@ -272,7 +272,7 @@ def clean(files, mode, commodity_corrections, commodity_name_mapping):
             num_col = len(df.columns)
             if num_col == 10:
                 df.columns = ['date', 'state', 'market', 'category', 'commodity', 'variety', 'arrival', 'min', 'max', 'modal']
-            elif num_col == 11: 
+            elif num_col == 11:
                 df.columns = ['date', 'state', 'market', 'category', 'commodity', 'variety', 'arrival', 'grade', 'min', 'max', 'modal']
 
             df['state'] = df['state'].replace(commodity_corrections, replace=True)
@@ -291,7 +291,7 @@ def clean(files, mode, commodity_corrections, commodity_name_mapping):
 
 """
 NOTE: this method operates in a ${category} folder where files are stored as ${commodity}_${date}.csv
-TODO: change this method to stack from 
+TODO: change this method to stack from
     by_date_and_commodity/${category}/${commodity}/integrated/*localized.csv
     to by_commodity/${category}/${commodity}/integrated/*stacked_localized.csv
 """
@@ -300,7 +300,7 @@ def merge(folder, files, mode, stage='integrated', replace=False):
     print(folder)
     print('Entering merging..')
     if mode == 'batch':
-        replace = True 
+        replace = True
 
     commodities = list(set(list(map(lambda x: x.split('_')[0], files))))
     print(commodities)
@@ -348,7 +348,7 @@ def merge(folder, files, mode, stage='integrated', replace=False):
             # "Bottle gourd"
             command = '/bin/bash -c \"cat {0}_*.csv > {1}\"'.format(orig_commodity, target)
             os.system(command)
-        ### TODO: in online mode files are first processed to by_date_and_commodity/${cat}/${comm}/integrated and then appended to 
+        ### TODO: in online mode files are first processed to by_date_and_commodity/${cat}/${comm}/integrated and then appended to
         # the already existing file stacks in by_commodity/${cat}/${comm}/integrated
         # functionality can be changed back to updating only cleaned files with the 'status' variable
         elif not replace:
@@ -358,7 +358,7 @@ def merge(folder, files, mode, stage='integrated', replace=False):
             curr_dir = os.getcwd()
             os.chdir(target_dir)
             #os.chdir('../../by_date_and_commodity/{}'.format(folder))
-            files = glob.glob('*{}.csv'.format(stage)) 
+            files = glob.glob('*{}.csv'.format(stage))
             if files:
                 command = '/bin/bash -c \"cat {0}_*{3}.csv >> {1}/{2}_stacked_{3}.csv\"'.format(orig_commodity, target_dir, commodity, stage)
                 os.system(command)
@@ -393,7 +393,7 @@ def main(task, mode):
             files = glob.glob('*.csv')
             merge(folder, files, mode)
             title = '{} merging'.format(mode)
-        elif task == 'clean':   
+        elif task == 'clean':
             ### what to do for cleaning ==> replace files with _cleaned attachment
             title = '{} cleaning'.format(mode)
             if mode == 'batch':
@@ -407,7 +407,7 @@ def main(task, mode):
                 clean(files, mode, commodity_corrections, commodity_name_mapping)
                 os.chdir(curr_dir)
             else:
-                clean(files, mode)  
+                clean(files, mode)
         elif task == 'extract':
             ### TODO: extract dicts from integrated data? => no, for now save all data stages on disk
             title = 'dictionary extraction'
@@ -428,7 +428,7 @@ def main(task, mode):
     if task == 'extract':
         ### save dictionaries
         json.dump(commodity_dict, open(path.join(data_dir, 'commodities', 'commodity_dict.json'), 'w'))
-        not_other = [item for key, item in commodity_dict.items() if 'Other' not in item['category']]   
+        not_other = [item for key, item in commodity_dict.items() if 'Other' not in item['category']]
         json.dump(not_other, open(path.join(data_dir, 'commodities', 'commodity_dict_without_other.json'), 'w'))
         json.dump(category_dict, open(path.join(data_dir, 'commodities', 'category_dict.json'), 'w'))
         json.dump(market_commodity_dict, open(path.join(data_dir, 'markets', 'market_commodity_dict.json'), 'w'))
@@ -445,7 +445,7 @@ def main(task, mode):
 if __name__ == "__main__":
     task = ['clean', 'merge', 'extract']
     mode = ['batch', 'online']
-    ### TODO: use argparse!!!   
+    ### TODO: use argparse!!!
     if len(sys.argv) > 1 and sys.argv[1] in task and sys.argv[2] in mode:
         main(*sys.argv[1:])
     else:

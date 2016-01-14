@@ -19,12 +19,6 @@ outpath = path.join(data_dir, 'stats', 'plots')
 if not path.exists(outpath):
     os.makedirs(outpath)
 
-def custom_bar_plot():
-    return
-
-def custom_line_plot():
-    return
-
 """
     Automate population of subplots:
 http://stackoverflow.com/questions/24828771/automate-the-populating-of-subplots
@@ -48,10 +42,9 @@ def chunks(l, n):
         yield l[i:i+n]
 
 ### TODO: add column to be plotted on y axis?
-def page_barplots(xlabel, ylabels, stype, title, page_id, chunk, pdf):
+def page_barplots(xlabel, ylabels, stype, title, page_id, chunk, pdf, rotate):
     chunk_len = len(chunk)
     fig, axes = plt.subplots(nrows=3, ncols=2, dpi=100)
-    sns.despine(fig)
     fig.set_size_inches([8.27,11.69])
     ### TODO: put info in subplot title!!!
     #fig.suptitle(title + ', page '+str(page_id))
@@ -62,10 +55,24 @@ def page_barplots(xlabel, ylabels, stype, title, page_id, chunk, pdf):
         df = remove_group_idx(group)
         df = complete_df(df, xlabel)
         if len(ylabels) > 1:
+            # only have more than one label in case of nas
             df = tidy_df(df, xlabel, ylabels, stype)
-            sns.barplot(x=xlabel, y='value', hue=stype, data=df, ax=ax)
+            ylabel = 'missing percentage'
+            axis=sns.barplot(x=xlabel, y='value', hue=stype, data=df, ax=ax)
         else:
-            sns.barplot(x=xlabel, y=ylabels[0], data=df, ax=ax)
+            ylabel = ylabels[0]
+            if stype=="coverage":
+                axis=sns.barplot(x=xlabel, y=ylabels[0], data=df, ax=ax, color="green") #palette=sns.light_palette("green"))
+            else:
+                axis=sns.barplot(x=xlabel, y=ylabels[0], data=df, ax=ax)
+        if stype in ["coverage", "nas"]:
+            axis.set_ylim([0, 100])
+        # reference: axis=ax?
+        axis.set_ylabel(ylabel)
+        sns.despine()
+        # test to see if label rotation works
+        if rotate:
+            plt.setp(axis.get_xticklabels(), rotation=45)
         # using year as subplot title
         ax.set_title(idx)
         #ax.xaxis.set_major_locator(months)
@@ -89,8 +96,12 @@ def get_plot_filename(filename, props, ext):
     stype = props.pop('stype', None)
     atype = props.pop('aggrlvl', None)
     admin = props.pop('admin', [])
+    if admin:
+        if isinstance(admin[0], list):
+            return []
     subpath = ''
     folders = list(filter(None, [stype, atype])) + admin
+    print(folders)
     if folders:
         subpath = path.join(*folders)
         check = path.join(outpath, subpath)
@@ -139,18 +150,32 @@ def tidy_df(df, xlabel, ylabels, stype):
 ### TODO: for Beverages month 10 has a huge column: find anomaly
 def simple_barplot(xlabel, ylabels, stype, df, filename, exts):
     ## how to have multiple y values? pass list?
-    fig = plt.figure()
-    df = complete_df(df, xlabel)
-    if len(ylabels) > 1:
-        df = tidy_df(df, xlabel, ylabels, stype)
-        barplot = sns.barplot(x=xlabel, y='value', hue=stype, data=df)
-    else:
-        barplot = sns.barplot(x=xlabel, y=ylabels[0], data=df)
-    fig.add_axes(barplot)
-    ### TODO: call complete_df() and tidy_df()
-    for ext in exts:
-        save_plot(fig, outpath, filename, '.'+ext)
-    plt.close()
+    with sns.axes_style('ticks'):
+        fig = plt.figure()
+        df = complete_df(df, xlabel)
+        if len(ylabels) > 1:
+            df = tidy_df(df, xlabel, ylabels, stype)
+            ylabel = 'missing percentage'
+            plot = sns.barplot(x=xlabel, y='value', hue=stype, data=df)
+        else:
+            ylabel = ylabels[0]
+            if stype == "coverage":
+                plot = sns.barplot(x=xlabel, y=ylabels[0], data=df, color="green") #palette=sns.light_palette("green"))
+            else:
+                plot = sns.barplot(x=xlabel, y=ylabels[0], data=df)
+        if stype in ["coverage", "nas"]:
+            plot.set_ylim([0, 100])
+        sns.despine()
+        plt.ylabel(ylabel)
+        if xlabel == "year":
+            plt.setp(plot.get_xticklabels(), rotation=45)
+        plt.xlabel(xlabel)
+        fig.add_axes(plot)
+        fig.tight_layout()
+        ### TODO: call complete_df() and tidy_df()
+        for ext in exts:
+            save_plot(fig, outpath, filename, '.'+ext)
+        plt.close()
     return
 
 def longitudinal_plot(df, group_cols, filename, props, ext='pdf'):
@@ -166,13 +191,19 @@ def longitudinal_plot(df, group_cols, filename, props, ext='pdf'):
     ### TODO: append props info to filename?
     title = ' '.join(filename.split('_'))
     outfile = get_plot_filename(filename, props, ext)
+    if not outfile:
+        return
     page_id = 1
+    rotate=False
+    print(xlabel)
+    if xlabel == "year":
+        rotate=True
     # need group by for those files that contain level
     with sns.axes_style('ticks'):
         with PdfPages(path.join(outpath, outfile)) as pdf:
             for chunk in plot_chunks:
                 print('Number (=6?) of elements in chunk:', len(chunk))
-                page_barplots(xlabel, ylabels, stype, title, page_id, chunk, pdf)
+                page_barplots(xlabel, ylabels, stype, title, page_id, chunk, pdf, rotate)
                 page_id+=1
     return
 
@@ -387,25 +418,32 @@ def plot_type_handler(stype):
     type_files = get_files_by_aggr_type(stype)
     ### now split by total vs commodity
     total_files = filter_files_on_aggr_lvl(type_files, 'total')
-    comm_files = filter_files_on_aggr_lvl(type_files, 'commodity')
+    #comm_files = filter_files_on_aggr_lvl(type_files, 'commodity')
 
     ### pass some information of how to adopt plot according to plot_type (nas, coverage, arrivals) if at all necessary and not handled automatically
     plot_aggr_lvl_handler(total_files, 'total', stype)
-    plot_aggr_lvl_handler(comm_files, 'commodity', stype)
+    #plot_aggr_lvl_handler(comm_files, 'commodity', stype)
+    return
+
+def market_plot():
+    # total means avged across commodities
+    df = pd.DataFrame.from_csv('total_coverage_by_state-district-market_year.csv', index_col=None)
+    df = df.groupby('year').mean().reset_index()
+    simple_barplot('year', ['coverage'], 'coverage', df, 'mean_coverage_by_market-year', ['png', 'pdf'])
     return
 
 def main(stype):
+
     #data_dir = '../../data'
     #os.chdir(data_dir)
     #data_dir = os.getcwd()
     stats_dir = path.join(data_dir, 'stats', 'all')
     os.chdir(stats_dir)
 
+    #market_plot()
+
     print('Plotting {} stats'.format(stype))
     plot_type_handler(stype)
-    #plot_type_handler('tonnage')
-    #plot_type_handler('nas')
-    #plot_type_handler('coverage')
 
     return
 

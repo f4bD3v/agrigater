@@ -103,6 +103,7 @@ def joint_nas(group):
     joint_nas = joint_na_group.shape[0]#joint_na_group.count()
     return pd.Series([joint_nas], index=['joint nas'])
 
+# total percentage of nas for records in a group
 def get_loc_nas(df, commodity, date_group_cols, group_cols, outdir):
     name = '-'.join(group_cols)
     time = '-'.join(date_group_cols)
@@ -420,15 +421,15 @@ def get_coverages(df, date_range, outdir, commodity):
     ### NOTE: use one record per date per market
     ### columns on which to drop duplicates for distinct date entries per market:
     market_cols = ['date', 'market']
-    #get_loc_coverage(df, market_cols, [], ['state', 'district', 'market'], date_range, outdir)
+    get_loc_coverage(df, market_cols, [], ['state', 'district', 'market'], date_range, outdir)
     #get_loc_coverage(df, ['date', 'district'], [], ['state', 'district'], date_range, outdir, 'market')
     get_loc_coverage(df, ['date', 'state'], [], ['state'], date_range, outdir, 'market')
 
-    #get_loc_coverage(df, market_cols, ['year'], ['state', 'district', 'market'], None, outdir)
+    get_loc_coverage(df, market_cols, ['year'], ['state', 'district', 'market'], None, outdir)
     #get_loc_coverage(df, ['date', 'district'], ['year'], ['state', 'district'], None, outdir, 'market')
     get_loc_coverage(df, ['date', 'state'], ['year'], ['state'], None, outdir, 'market')
 
-    #ym_market = get_loc_coverage(df, market_cols, ['year', 'month'], ['state', 'district', 'market'], None, outdir)
+    ym_market = get_loc_coverage(df, market_cols, ['year', 'month'], ['state', 'district', 'market'], None, outdir)
     #ym_district = get_loc_coverage(df, ['date', 'district'], ['year', 'month'], ['state', 'district'], None, outdir, 'market')
     ym_state = get_loc_coverage(df, ['date', 'state'], ['year', 'month'], ['state'], None, outdir, 'market')
     # on date X 7 distinct commodityTonnage entries, 12 distinct price entries for a commodity
@@ -436,7 +437,7 @@ def get_coverages(df, date_range, outdir, commodity):
 
     ### TODO: by month mean coverage
     ### additional group by month: and call avg
-    #mean_by_month(ym_market, outdir, ['state', 'district', 'market'])
+    mean_by_month(ym_market, outdir, ['state', 'district', 'market'])
     #mean_by_month(ym_district, outdir, ['state', 'district'])
     mean_by_month(ym_state, outdir, ['state'])
     return

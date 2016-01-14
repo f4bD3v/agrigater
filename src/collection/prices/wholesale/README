@@ -1,0 +1,2 @@
+use csplit command to split commodities file into files per category:
+csplit -s -f comm commodities.txt "/#.*/" {13}
